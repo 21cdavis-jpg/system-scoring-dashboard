@@ -11,6 +11,8 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, '..client/dist')));
 
+app.use('/assets', express.static(path.join(__dirname, '../client/dist/assets')));
+
 const db = new sqlite3.Database('./sports.db', (err) => {
     if (err) console.error(err.message);
     console.log('Connected to the sports database.');

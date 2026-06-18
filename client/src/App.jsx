@@ -3,9 +3,21 @@ import axios from 'axios';
 import './App.css';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:5000'
-  : 'https://shot-quality-scoring-system.onrender.com';
+const getApiBaseUrl = () => {
+  const host = window.location.hostname;
+  const port = window.location.port;
+
+  // If running locally on your computer
+  if (host === 'localhost' || host === '127.0.0.1') {
+    // If viewing through the Vite development server, point across to the Express backend port
+    return port === '5173' ? 'http://localhost:5000' : '';
+  }
+  
+  // If running live on Render, use a relative path
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 function SystemDifferentialChart({ rawData }) {
   const [binSize, setBinSize] = useState(10);
