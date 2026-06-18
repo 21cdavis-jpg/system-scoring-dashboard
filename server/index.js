@@ -9,13 +9,16 @@ const path = require('path');
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, '..client/dist')));
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.use('/assets', express.static(path.join(__dirname, '../client/dist/assets')));
 
-const db = new sqlite3.Database('./sports.db', (err) => {
-    if (err) console.error(err.message);
-    console.log('Connected to the sports database.');
+const db = new sqlite3.Database(path.resolve(__dirname, 'sports.db'), (err) => {
+    if (err) {
+        console.error("Database connection failure:", err.message);
+    } else {
+        console.log('Connected to the sports database at absolute path:', path.resolve(__dirname, 'sports.db'));
+    }
 });
 
 // HELPER: Move this to the top so all routes can see it
