@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  base: './',
   optimizeDeps: {
     exclude: ['recharts'] // <-- Forces Vite to bypass pre-bundling and stops the crash
   }
