@@ -5,9 +5,16 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000
 const path = require('path');
+const basicAuth = require('express-basic-auth');
 
 app.use(cors());
 app.use(express.json());
+
+app.use(basicAuth({
+    users: { 'Cal': 'your_secure_password_here' }, // Replace with your preferred username and password
+    challenge: true, // This forces the browser to open the native login prompt box
+    unauthorizedResponse: 'Unauthorized Access. This system is private.'
+}));
 
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
