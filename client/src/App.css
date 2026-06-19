@@ -221,3 +221,18 @@ main {
     vertical-align: middle;
     padding: 3px;
 }
+
+.games-tab-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Default to stacking on mobile */
+  gap: 16px;
+  width: 100%;
+}
+
+/* Desktop Breakpoint */
+@media (min-width: 992px) {
+  .games-tab-grid {
+    grid-template-columns: 1fr 1.8fr 1fr; /* Restores your precise workspace balance */
+    gap: 12px;
+  }
+}

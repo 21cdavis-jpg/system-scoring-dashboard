@@ -420,18 +420,19 @@ function App() {
             </div>
 
             {/* Three-Column Grid System layout to optimize your workspace */}
-            <div style={{ display: 'flex', gap: '3px'}}>
+            <div className="games-tab-grid">
             {/* Heading stays completely external and stationary */}
               
               {/* Column 1: Traditional Play-By-Play */}
               <div style={{ 
-                maxHeight: '800px', // Matches the typical height of your other dashboard tables
+                maxHeight: '600px', // Matches the typical height of your other dashboard tables
                 overflowY: 'auto',   // Enables vertical scrolling
                 overflowX: 'auto',   // Prevents layout breaking on small screens
                 border: '1px solid #ddd',
                 borderRadius: '4px',
                 marginTop: '15px',
-                fontSize: '0.8rem'
+                fontSize: '0.8rem',
+                width: '100%'
               }}>
               
                 
@@ -482,97 +483,101 @@ function App() {
                   {/* Table A: Scoring by Period */}
                   <div>
                     <h3 style={{ margin: '0 0 10px 0' }}>Scoring by Period</h3>
-                    <table className="play-table" style={{ width: '100%' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                          <th>Period</th>
-                          <th>Team</th>
-                          <th>Poss.</th>
-                          <th>System Score</th>
-                          <th>Shot Margin</th>
-                          <th>Shot Quality</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {periodStats.map((row, idx) => (
-                          <React.Fragment key={idx}>
-                            {/* Home Team Row */}
-                            <tr style={{ borderTop: '2px solid #ccc' }}>
-                              <td rowSpan="2" style={{ fontWeight: 'bold', verticalAlign: 'middle', backgroundColor: '#fafafa', borderRight: '1px solid #ddd' }}>{row.period}</td>
-                              <td style={{ fontWeight: '500' }}>Home</td>
-                              <td>{row.Home.poss}</td>
-                              <td>{row.Home.system.toFixed(0)}</td>
-                              <td>{(row.Home.shots - row.Away.shots) >= 0 ? `+${row.Home.shots - row.Away.shots}` : row.Home.shots - row.Away.shots}</td>
-                              <td>{row.Home.shots > 0 ? (row.Home.totalQual / row.Home.shots).toFixed(2) : '0.00'}</td>
+                      <div style={{ overflowX: 'auto', width: '100%', marginBottom: '15px' }}>
+                        <table className="play-table" style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+                              <th>Period</th>
+                              <th>Team</th>
+                              <th>Poss.</th>
+                              <th>System Score</th>
+                              <th>Shot Margin</th>
+                              <th>Shot Quality</th>
                             </tr>
-                            {/* Away Team Row */}
-                            <tr style={{ backgroundColor: '#f9f9f9' }}>
-                              <td style={{ fontWeight: '500' }}>Away</td>
-                              <td>{row.Away.poss}</td>
-                              <td>{row.Away.system.toFixed(0)}</td>
-                              <td>{(row.Away.shots - row.Home.shots) >= 0 ? `+${row.Away.shots - row.Home.shots}` : row.Away.shots - row.Home.shots}</td>
-                              <td>{row.Away.shots > 0 ? (row.Away.totalQual / row.Away.shots).toFixed(2) : '0.00'}</td>
+                          </thead>
+                          <tbody>
+                            {periodStats.map((row, idx) => (
+                              <React.Fragment key={idx}>
+                                {/* Home Team Row */}
+                                <tr style={{ borderTop: '2px solid #ccc' }}>
+                                  <td rowSpan="2" style={{ fontWeight: 'bold', verticalAlign: 'middle', backgroundColor: '#fafafa', borderRight: '1px solid #ddd' }}>{row.period}</td>
+                                  <td style={{ fontWeight: '500' }}>Home</td>
+                                  <td>{row.Home.poss}</td>
+                                  <td>{row.Home.system.toFixed(0)}</td>
+                                  <td>{(row.Home.shots - row.Away.shots) >= 0 ? `+${row.Home.shots - row.Away.shots}` : row.Home.shots - row.Away.shots}</td>
+                                  <td>{row.Home.shots > 0 ? (row.Home.totalQual / row.Home.shots).toFixed(2) : '0.00'}</td>
+                                </tr>
+                                {/* Away Team Row */}
+                                <tr style={{ backgroundColor: '#f9f9f9' }}>
+                                  <td style={{ fontWeight: '500' }}>Away</td>
+                                  <td>{row.Away.poss}</td>
+                                  <td>{row.Away.system.toFixed(0)}</td>
+                                  <td>{(row.Away.shots - row.Home.shots) >= 0 ? `+${row.Away.shots - row.Home.shots}` : row.Away.shots - row.Home.shots}</td>
+                                  <td>{row.Away.shots > 0 ? (row.Away.totalQual / row.Away.shots).toFixed(2) : '0.00'}</td>
+                                </tr>
+                              </React.Fragment>
+                            ))}
+                            {/* Summary Accumulation Footer Row */}
+                            <tr style={{ borderTop: '3px double #2c3e50', fontWeight: 'bold', backgroundColor: '#eaeded' }}>
+                              <td rowSpan="2" style={{ verticalAlign: 'middle', borderRight: '1px solid #ddd' }}>Total</td>
+                              <td>Home</td>
+                              <td>{totalPeriodHome.poss}</td>
+                              <td>{totalPeriodHome.system.toFixed(0)}</td>
+                              <td>{(totalPeriodHome.shots - totalPeriodAway.shots) >= 0 ? `+${totalPeriodHome.shots - totalPeriodAway.shots}` : totalPeriodHome.shots - totalPeriodAway.shots}</td>
+                              <td>{totalPeriodHome.shots > 0 ? (totalPeriodHome.totalQual / totalPeriodHome.shots).toFixed(2) : '0.00'}</td>
                             </tr>
-                          </React.Fragment>
-                        ))}
-                        {/* Summary Accumulation Footer Row */}
-                        <tr style={{ borderTop: '3px double #2c3e50', fontWeight: 'bold', backgroundColor: '#eaeded' }}>
-                          <td rowSpan="2" style={{ verticalAlign: 'middle', borderRight: '1px solid #ddd' }}>Total</td>
-                          <td>Home</td>
-                          <td>{totalPeriodHome.poss}</td>
-                          <td>{totalPeriodHome.system.toFixed(0)}</td>
-                          <td>{(totalPeriodHome.shots - totalPeriodAway.shots) >= 0 ? `+${totalPeriodHome.shots - totalPeriodAway.shots}` : totalPeriodHome.shots - totalPeriodAway.shots}</td>
-                          <td>{totalPeriodHome.shots > 0 ? (totalPeriodHome.totalQual / totalPeriodHome.shots).toFixed(2) : '0.00'}</td>
-                        </tr>
-                        <tr style={{ fontWeight: 'bold', backgroundColor: '#eaeded' }}>
-                          <td>Away</td>
-                          <td>{totalPeriodAway.poss}</td>
-                          <td>{totalPeriodAway.system.toFixed(0)}</td>
-                          <td>{(totalPeriodAway.shots - totalPeriodHome.shots) >= 0 ? `+${totalPeriodAway.shots - totalPeriodHome.shots}` : totalPeriodAway.shots - totalPeriodHome.shots}</td>
-                          <td>{totalPeriodAway.shots > 0 ? (totalPeriodAway.totalQual / totalPeriodAway.shots).toFixed(2) : '0.00'}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                            <tr style={{ fontWeight: 'bold', backgroundColor: '#eaeded' }}>
+                              <td>Away</td>
+                              <td>{totalPeriodAway.poss}</td>
+                              <td>{totalPeriodAway.system.toFixed(0)}</td>
+                              <td>{(totalPeriodAway.shots - totalPeriodHome.shots) >= 0 ? `+${totalPeriodAway.shots - totalPeriodHome.shots}` : totalPeriodAway.shots - totalPeriodHome.shots}</td>
+                              <td>{totalPeriodAway.shots > 0 ? (totalPeriodAway.totalQual / totalPeriodAway.shots).toFixed(2) : '0.00'}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                   </div>
 
                   {/* Table B: Scoring by Possessions */}
                   <div>
                     <h3 style={{ margin: '0 0 6px 0' }}>Scoring by Possessions</h3>
-                    <table className="play-table" style={{ width: '100%' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                          <th>Poss.</th>
-                          <th>Team</th>
-                          <th>Poss.</th>
-                          <th>System Score</th>
-                          <th>Shot Margin</th>
-                          <th>Shot Quality</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {possessionStats.map((row, idx) => (
-                          <React.Fragment key={idx}>
-                            {/* Home Row */}
-                            <tr style={{ borderTop: '2px solid #ccc' }}>
-                              <td rowSpan="2" style={{ fontWeight: 'bold', verticalAlign: 'middle', backgroundColor: '#fafafa', borderRight: '1px solid #ddd', fontSize: '0.8rem' }}>{row.label}</td>
-                              <td style={{ fontWeight: '500', fontSize: '0.8rem' }}>Home</td>
-                              <td>{row.Home.poss}</td>
-                              <td>{row.Home.system.toFixed(0)}</td>
-                              <td>{(row.Home.shots - row.Away.shots) >= 0 ? `+${row.Home.shots - row.Away.shots}` : row.Home.shots - row.Away.shots}</td>
-                              <td>{row.Home.shots > 0 ? (row.Home.totalQual / row.Home.shots).toFixed(2) : '0.00'}</td>
+                      <div style={{ overflowX: 'auto', width: '100%', marginBottom: '15px' }}>     
+                        <table className="play-table" style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+                              <th>Poss.</th>
+                              <th>Team</th>
+                              <th>Poss.</th>
+                              <th>System Score</th>
+                              <th>Shot Margin</th>
+                              <th>Shot Quality</th>
                             </tr>
-                            {/* Away Row */}
-                            <tr style={{ backgroundColor: '#f9f9f9' }}>
-                              <td style={{ fontWeight: '500', fontSize: '0.8rem' }}>Away</td>
-                              <td>{row.Away.poss}</td>
-                              <td>{row.Away.system.toFixed(0)}</td>
-                              <td>{(row.Away.shots - row.Home.shots) >= 0 ? `+${row.Away.shots - row.Home.shots}` : row.Away.shots - row.Home.shots}</td>
-                              <td>{row.Away.shots > 0 ? (row.Away.totalQual / row.Away.shots).toFixed(2) : '0.00'}</td>
-                            </tr>
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody>
+                            {possessionStats.map((row, idx) => (
+                              <React.Fragment key={idx}>
+                                {/* Home Row */}
+                                <tr style={{ borderTop: '2px solid #ccc' }}>
+                                  <td rowSpan="2" style={{ fontWeight: 'bold', verticalAlign: 'middle', backgroundColor: '#fafafa', borderRight: '1px solid #ddd', fontSize: '0.8rem' }}>{row.label}</td>
+                                  <td style={{ fontWeight: '500', fontSize: '0.8rem' }}>Home</td>
+                                  <td>{row.Home.poss}</td>
+                                  <td>{row.Home.system.toFixed(0)}</td>
+                                  <td>{(row.Home.shots - row.Away.shots) >= 0 ? `+${row.Home.shots - row.Away.shots}` : row.Home.shots - row.Away.shots}</td>
+                                  <td>{row.Home.shots > 0 ? (row.Home.totalQual / row.Home.shots).toFixed(2) : '0.00'}</td>
+                                </tr>
+                                {/* Away Row */}
+                                <tr style={{ backgroundColor: '#f9f9f9' }}>
+                                  <td style={{ fontWeight: '500', fontSize: '0.8rem' }}>Away</td>
+                                  <td>{row.Away.poss}</td>
+                                  <td>{row.Away.system.toFixed(0)}</td>
+                                  <td>{(row.Away.shots - row.Home.shots) >= 0 ? `+${row.Away.shots - row.Home.shots}` : row.Away.shots - row.Home.shots}</td>
+                                  <td>{row.Away.shots > 0 ? (row.Away.totalQual / row.Away.shots).toFixed(2) : '0.00'}</td>
+                                </tr>
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                   </div>
 
                 </div>
@@ -580,7 +585,7 @@ function App() {
 
               {/* Column 3: Existing Game Summary Sidebar */}
               {gameSummary && (
-                <div style={{ flex: 1, backgroundColor: '#f4f4f4', padding: '5px', borderRadius: '8px', height: 'fit-content' }}>
+                <div style={{ width: '100%', backgroundColor: '#f4f4f4', padding: '12px', borderRadius: '8px', height: 'fit-content', boxSizing: 'border-box'}}>
                   <h3>Game Summary</h3>
                   <table className="play-table" style={{ width: '100%', tableLayout: 'auto' }}>
                     <thead>
@@ -980,77 +985,80 @@ function App() {
 
             <div  style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '50px', margin: '20px auto' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Scoring Environment</h2>
-              
-              <table className="play-table" style = {{width: 'auto', margin: '0 auto', tableLayout: 'fixed'}}>
-                <thead>
-                  <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                    <th style ={{width: '75px'}}>Shot Type</th>
-                    <th style ={{width: '75px'}}>Actual PPS</th>
-                    <th style ={{width: '75px'}}>Expected PPS</th>
-                    <th style ={{width: '75px'}}>PPS Difference</th>
-                    <th style ={{width: '75px'}}>Shot Variation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {systemStats.shotTable.map((row, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: 'bold' }}>{row.type}</td>
-                      <td>{row.actual}</td>
-                      <td>{row.expected}</td>
-                      <td style={{ color: parseFloat(row.diff) >= 0 ? 'green' : 'red' }}>
-                        {parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}
-                      </td>
-                      <td>{row.rsd}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                <div style={{ overflowX: 'auto', width: '100%' }}>
+                  <table className="play-table" style={{ width: '100%', minWidth: '600px', margin: '0 auto' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+                        <th style ={{width: '75px'}}>Shot Type</th>
+                        <th style ={{width: '75px'}}>Actual PPS</th>
+                        <th style ={{width: '75px'}}>Expected PPS</th>
+                        <th style ={{width: '75px'}}>PPS Difference</th>
+                        <th style ={{width: '75px'}}>Shot Variation</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {systemStats.shotTable.map((row, idx) => (
+                        <tr key={idx}>
+                          <td style={{ fontWeight: 'bold' }}>{row.type}</td>
+                          <td>{row.actual}</td>
+                          <td>{row.expected}</td>
+                          <td style={{ color: parseFloat(row.diff) >= 0 ? 'green' : 'red' }}>
+                            {parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}
+                          </td>
+                          <td>{row.rsd}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
             </div>
 
             <div style={{ marginTop: '50px', width: '98%', margin: '50px auto' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Team Performance vs. System</h2>
-              <table className="play-table" style = {{width: 'auto', margin: '0 auto', tableLayout: 'fixed'}}>
-                <thead>
-                  <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                    <th>Team</th>
-                    <th>Record</th>
-                    <th>System Record</th>
-                    <th>GB</th>
-                    <th>Matched</th>
-                    <th>Mismatched</th>
-                    <th>Exp. PPS</th>
-                    <th>Act. PPS</th>
-                    <th>PPS Diff</th>
-                    <th>Exp. PPP</th>
-                    <th>Act. PPP</th>
-                    <th>PPP Diff</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {systemStats.teamTable.map((row, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: 'bold', textAlign: 'left' }}>{row.name}</td>
-                      <td>{row.record}</td>
-                      <td>{row.sysRecord}</td>
-                      <td style={{ color: row.gb > 0 ? 'green' : row.gb < 0 ? 'red' : 'inherit', fontWeight: 'bold' }}>
-                        {row.gb > 0 ? `+${row.gb}` : row.gb}
-                      </td>
-                      <td>{row.matched}</td>
-                      <td>{row.mismatched}</td>
-                      <td>{row.expectedPPS}</td>
-                      <td>{row.actualPPS}</td>
-                      <td style={{ color: parseFloat(row.ppsDiff) >= 0 ? 'green' : 'red' }}>
-                        {parseFloat(row.ppsDiff) > 0 ? `+${row.ppsDiff}` : row.ppsDiff}
-                      </td>
-                      <td>{row.expectedPPP}</td>
-                      <td>{row.actualPPP}</td>
-                      <td style={{ color: parseFloat(row.pppDiff) >= 0 ? 'green' : 'red' }}>
-                        {parseFloat(row.pppDiff) > 0 ? `+${row.pppDiff}` : row.pppDiff}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                <div style={{ overflowX: 'auto', width: '100%' }}>
+                  <table className="play-table" style={{ width: '100%', minWidth: '600px', margin: '0 auto' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+                        <th>Team</th>
+                        <th>Record</th>
+                        <th>System Record</th>
+                        <th>GB</th>
+                        <th>Matched</th>
+                        <th>Mismatched</th>
+                        <th>Exp. PPS</th>
+                        <th>Act. PPS</th>
+                        <th>PPS Diff</th>
+                        <th>Exp. PPP</th>
+                        <th>Act. PPP</th>
+                        <th>PPP Diff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {systemStats.teamTable.map((row, idx) => (
+                        <tr key={idx}>
+                          <td style={{ fontWeight: 'bold', textAlign: 'left' }}>{row.name}</td>
+                          <td>{row.record}</td>
+                          <td>{row.sysRecord}</td>
+                          <td style={{ color: row.gb > 0 ? 'green' : row.gb < 0 ? 'red' : 'inherit', fontWeight: 'bold' }}>
+                            {row.gb > 0 ? `+${row.gb}` : row.gb}
+                          </td>
+                          <td>{row.matched}</td>
+                          <td>{row.mismatched}</td>
+                          <td>{row.expectedPPS}</td>
+                          <td>{row.actualPPS}</td>
+                          <td style={{ color: parseFloat(row.ppsDiff) >= 0 ? 'green' : 'red' }}>
+                            {parseFloat(row.ppsDiff) > 0 ? `+${row.ppsDiff}` : row.ppsDiff}
+                          </td>
+                          <td>{row.expectedPPP}</td>
+                          <td>{row.actualPPP}</td>
+                          <td style={{ color: parseFloat(row.pppDiff) >= 0 ? 'green' : 'red' }}>
+                            {parseFloat(row.pppDiff) > 0 ? `+${row.pppDiff}` : row.pppDiff}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
             </div>
             
             {/* NEW INTERACTIVE CHART ELEMENT PLACED STRATEGICALLY UNDER TITLE */}
