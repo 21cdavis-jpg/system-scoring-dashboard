@@ -236,3 +236,12 @@ main {
     gap: 12px;
   }
 }
+
+.main-title {
+  /* clamp(MIN, PREFERRED, MAX) */
+  font-size: clamp(1.5rem, 4vw + 1rem, 2.8rem);
+}
+
+.accuracy-text {
+  font-size: clamp(1.1rem, 2vw + 0.8rem, 1.6rem);
+}
