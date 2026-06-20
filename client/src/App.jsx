@@ -957,7 +957,7 @@ function App() {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <p className="overall-text" style={{ fontWeight: 'bold', margin: '0' }}>
+                <p className="overall-text" style={{  fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 'bold', margin: '0' }}>
                   Overall Accuracy: {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
                 </p>
                 <p style={{ fontSize: '1.2rem', margin: '5px 0 0 0', color: '#666' }}>
@@ -967,7 +967,7 @@ function App() {
               
 
               <div>
-                <p className="accuracy-text" style={{ fontWeight: '600', margin: '0' }}>
+                <p className="accuracy-text" style={{ fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', fontWeight: '600', margin: '0' }}>
                   Conservative Accuracy: {systemStats.conservative.pct}% ({systemStats.conservative.count}/{systemStats.total})
                 </p>
                 <p style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
@@ -975,7 +975,7 @@ function App() {
                 </p>
               </div>
               <div>
-                <p className="accuracy-text" style={{ fontWeight: '600', margin: '0' }}>
+                <p className="accuracy-text" style={{ fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', fontWeight: '600', margin: '0' }}>
                   Aggressive Accuracy: {systemStats.aggressive.pct}% ({systemStats.aggressive.count}/{systemStats.total})
                 </p>
                 <p style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
