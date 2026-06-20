@@ -251,7 +251,7 @@ main {
     font-size: 1.6rem; /* Scales down smoothly for phones */
   }
   .overall-text {
-    font-size: 1.4 rem
+    font-size: 1.4 rem;
   }
   .accuracy-text {
     font-size: 1.2rem; /* Scales down smoothly for phones */
