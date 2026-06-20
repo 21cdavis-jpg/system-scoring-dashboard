@@ -17,6 +17,8 @@ const getApiBaseUrl = () => {
   return '';
 };
 
+axios.defaults.withCredentials = true;
+
 const API_BASE_URL = getApiBaseUrl();
 
 function SystemDifferentialChart({ rawData }) {
