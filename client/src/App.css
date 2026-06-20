@@ -238,10 +238,20 @@ main {
 }
 
 .main-title {
-  /* clamp(MIN, PREFERRED, MAX) */
-  font-size: clamp(1.5rem, 4vw + 1rem, 2.8rem);
+  font-size: 2.5rem; /* ~40px */
 }
 
 .accuracy-text {
-  font-size: clamp(1.1rem, 2vw + 0.8rem, 1.6rem);
+  font-size: 1.5rem; /* ~24px */
+}
+
+/* Mobile Breakpoint (Screens smaller than 768px) */
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 1.6rem; /* Scales down smoothly for phones */
+  }
+
+  .accuracy-text {
+    font-size: 1.2rem; /* Scales down smoothly for phones */
+  }
 }
