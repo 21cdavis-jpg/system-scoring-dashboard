@@ -967,7 +967,7 @@ function App() {
               
 
               <div>
-                <p className="accuracy-text" style={{ fontSize: '1.4rem', fontWeight: '600', margin: '0' }}>
+                <p className="accuracy-text" style={{ fontWeight: '600', margin: '0' }}>
                   Conservative Accuracy: {systemStats.conservative.pct}% ({systemStats.conservative.count}/{systemStats.total})
                 </p>
                 <p className="accuracy-text" style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
@@ -975,7 +975,7 @@ function App() {
                 </p>
               </div>
               <div>
-                <p className="accuracy-text" style={{ fontSize: '1.4rem', fontWeight: '600', margin: '0' }}>
+                <p className="accuracy-text" style={{ fontWeight: '600', margin: '0' }}>
                   Aggressive Accuracy: {systemStats.aggressive.pct}% ({systemStats.aggressive.count}/{systemStats.total})
                 </p>
                 <p className="accuracy-text" style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
