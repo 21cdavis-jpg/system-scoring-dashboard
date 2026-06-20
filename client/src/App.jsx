@@ -689,44 +689,45 @@ function App() {
                 <div style={{ marginTop: '20px' }}>
                   <h3>{selectedTeamStats.teamName} ({selectedTeamStats.record})</h3>
                   <h3>Team Performance Summary</h3>
-                  <table className="play-table">
+                  <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                        <th>Side</th>
-                        <th>System Score</th>
-                        <th>Shot Margin</th>
-                        <th>Possessions</th>
-                        <th>Shots Gained</th>
-                        <th>Result Quality</th>
-                        <th>Shot Quality</th>
-                        <th>Stint Quality</th>
-                        <th>OREB%</th>
-                        <th>FT REB</th>
+                        
+                        <th style={{ border: '1px solid #ddd' }}>Side</th>
+                        <th style={{ border: '1px solid #ddd' }}>System Score</th>
+                        <th style={{ border: '1px solid #ddd' }}>Shot Margin</th>
+                        <th style={{ border: '1px solid #ddd' }}>Possessions</th>
+                        <th style={{ border: '1px solid #ddd' }}>Shots Gained</th>
+                        <th style={{ border: '1px solid #ddd' }}>Result Quality</th>
+                        <th style={{ border: '1px solid #ddd' }}>Shot Quality</th>
+                        <th style={{ border: '1px solid #ddd' }}>Stint Quality</th>
+                        <th style={{ border: '1px solid #ddd' }}>OREB%</th>
+                        <th style={{ border: '1px solid #ddd' }}>FT REB</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td>Offense</td>
-                        <td>{selectedTeamStats.off.sysG}</td>
-                        <td rowSpan="2">{selectedTeamStats.shot_margin}</td>
-                        <td>{selectedTeamStats.off.possG}</td>
-                        <td>{selectedTeamStats.shotsGained100}</td>
-                        <td>{selectedTeamStats.off.result_q}</td>
-                        <td>{selectedTeamStats.off.shot_q}</td>
-                        <td>{selectedTeamStats.off.stint_q}</td>
-                        <td>{selectedTeamStats.off.oRebPct}</td>
-                        <td>{selectedTeamStats.off.ftRebG}</td>
+                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>Offense</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.sysG}</td>
+                        <td rowSpan="2"  style={{ border: '1px solid #ddd' }}>{selectedTeamStats.shot_margin}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.possG}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.shotsGained100}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.result_q}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.shot_q}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.stint_q}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.oRebPct}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.off.ftRebG}</td>
                       </tr>
                       <tr>
-                        <td>Defense</td>
-                        <td>{selectedTeamStats.def.sysG}</td>
-                        <td>{selectedTeamStats.def.possG}</td>
-                        <td>{selectedTeamStats.shotsGained100d}</td>
-                        <td>{selectedTeamStats.def.result_q}</td>
-                        <td>{selectedTeamStats.def.shot_q}</td>
-                        <td>{selectedTeamStats.def.stint_q}</td>
-                        <td>{selectedTeamStats.def.oRebPct}</td>
-                        <td>{selectedTeamStats.def.ftRebG}</td>
+                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>Defense</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.sysG}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.possG}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.shotsGained100d}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.result_q}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.shot_q}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.stint_q}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.oRebPct}</td>
+                        <td style={{ border: '1px solid #ddd' }}>{selectedTeamStats.def.ftRebG}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -986,26 +987,26 @@ function App() {
             <div  style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '50px', margin: '20px auto' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Scoring Environment</h2>
                 <div style={{ overflowX: 'auto', width: '100%' }}>
-                  <table className="play-table" style={{ width: '100%', minWidth: '600px', margin: '0 auto' }}>
+                  <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                        <th style ={{width: '75px'}}>Shot Type</th>
-                        <th style ={{width: '75px'}}>Actual PPS</th>
-                        <th style ={{width: '75px'}}>Expected PPS</th>
-                        <th style ={{width: '75px'}}>PPS Difference</th>
-                        <th style ={{width: '75px'}}>Shot Variation</th>
+                        <th style={{ border: '1px solid #ddd' }}>Shot Type</th>
+                        <th style={{ border: '1px solid #ddd' }}>Actual PPS</th>
+                        <th style={{ border: '1px solid #ddd' }}>Expected PPS</th>
+                        <th style={{ border: '1px solid #ddd' }}>PPS Difference</th>
+                        <th style={{ border: '1px solid #ddd' }}>Shot Variation</th>
                       </tr>
                     </thead>
                     <tbody>
                       {systemStats.shotTable.map((row, idx) => (
                         <tr key={idx}>
-                          <td style={{ fontWeight: 'bold' }}>{row.type}</td>
-                          <td>{row.actual}</td>
-                          <td>{row.expected}</td>
-                          <td style={{ color: parseFloat(row.diff) >= 0 ? 'green' : 'red' }}>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>{row.type}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.actual}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.expected}</td>
+                          <td style={{ border: '1px solid #ddd', color: parseFloat(row.diff) >= 0 ? 'green' : 'red' }}>
                             {parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}
                           </td>
-                          <td>{row.rsd}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.rsd}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1016,42 +1017,42 @@ function App() {
             <div style={{ marginTop: '50px', width: '98%', margin: '50px auto' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Team Performance vs. System</h2>
                 <div style={{ overflowX: 'auto', width: '100%' }}>
-                  <table className="play-table" style={{ width: '100%', minWidth: '600px', margin: '0 auto' }}>
+                  <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                        <th>Team</th>
-                        <th>Record</th>
-                        <th>System Record</th>
-                        <th>GB</th>
-                        <th>Matched</th>
-                        <th>Mismatched</th>
-                        <th>Exp. PPS</th>
-                        <th>Act. PPS</th>
-                        <th>PPS Diff</th>
-                        <th>Exp. PPP</th>
-                        <th>Act. PPP</th>
-                        <th>PPP Diff</th>
+                        <th style={{ border: '1px solid #ddd' }}>Team</th>
+                        <th style={{ border: '1px solid #ddd' }}>Record</th>
+                        <th style={{ border: '1px solid #ddd' }}>System Record</th>
+                        <th style={{ border: '1px solid #ddd' }}>GB</th>
+                        <th style={{ border: '1px solid #ddd' }}>Matched</th>
+                        <th style={{ border: '1px solid #ddd' }}>Mismatched</th>
+                        <th style={{ border: '1px solid #ddd' }}>Exp. PPS</th>
+                        <th style={{ border: '1px solid #ddd' }}>Act. PPS</th>
+                        <th style={{ border: '1px solid #ddd' }}>PPS Diff</th>
+                        <th style={{ border: '1px solid #ddd' }}>Exp. PPP</th>
+                        <th style={{ border: '1px solid #ddd' }}>Act. PPP</th>
+                        <th style={{ border: '1px solid #ddd' }}>PPP Diff</th>
                       </tr>
                     </thead>
                     <tbody>
                       {systemStats.teamTable.map((row, idx) => (
                         <tr key={idx}>
-                          <td style={{ fontWeight: 'bold', textAlign: 'left' }}>{row.name}</td>
-                          <td>{row.record}</td>
-                          <td>{row.sysRecord}</td>
-                          <td style={{ color: row.gb > 0 ? 'green' : row.gb < 0 ? 'red' : 'inherit', fontWeight: 'bold' }}>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>{row.name}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.record}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.sysRecord}</td>
+                          <td style={{ border: '1px solid #ddd', color: row.gb > 0 ? 'green' : row.gb < 0 ? 'red' : 'inherit' }}>
                             {row.gb > 0 ? `+${row.gb}` : row.gb}
                           </td>
-                          <td>{row.matched}</td>
-                          <td>{row.mismatched}</td>
-                          <td>{row.expectedPPS}</td>
-                          <td>{row.actualPPS}</td>
-                          <td style={{ color: parseFloat(row.ppsDiff) >= 0 ? 'green' : 'red' }}>
+                          <td style={{ border: '1px solid #ddd' }}>{row.matched}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.mismatched}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.expectedPPS}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.actualPPS}</td>
+                          <td style={{ border: '1px solid #ddd', color: parseFloat(row.ppsDiff) >= 0 ? 'green' : 'red' }}>
                             {parseFloat(row.ppsDiff) > 0 ? `+${row.ppsDiff}` : row.ppsDiff}
                           </td>
-                          <td>{row.expectedPPP}</td>
-                          <td>{row.actualPPP}</td>
-                          <td style={{ color: parseFloat(row.pppDiff) >= 0 ? 'green' : 'red' }}>
+                          <td style={{ border: '1px solid #ddd' }}>{row.expectedPPP}</td>
+                          <td style={{ border: '1px solid #ddd' }}>{row.actualPPP}</td>
+                          <td style={{ border: '1px solid #ddd', color: parseFloat(row.pppDiff) >= 0 ? 'green' : 'red' }}>
                             {parseFloat(row.pppDiff) > 0 ? `+${row.pppDiff}` : row.pppDiff}
                           </td>
                         </tr>
