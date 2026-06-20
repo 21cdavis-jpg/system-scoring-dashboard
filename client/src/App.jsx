@@ -957,7 +957,7 @@ function App() {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <p className="accuracy-text" style={{ fontWeight: 'bold', margin: '0' }}>
+                <p className="overall-text" style={{ fontWeight: 'bold', margin: '0' }}>
                   Overall Accuracy: {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
                 </p>
                 <p style={{ fontSize: '1.2rem', margin: '5px 0 0 0', color: '#666' }}>
