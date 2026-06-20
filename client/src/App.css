@@ -248,10 +248,10 @@ main {
 /* Mobile Breakpoint (Screens smaller than 768px) */
 @media (max-width: 768px) {
   .main-title {
-    font-size: 1.4rem; /* Scales down smoothly for phones */
+    font-size: 1.5rem; /* Scales down smoothly for phones */
   }
 
   .accuracy-text {
-    font-size: 0.4rem; /* Scales down smoothly for phones */
+    font-size: 1.2rem; /* Scales down smoothly for phones */
   }
 }

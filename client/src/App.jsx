@@ -960,7 +960,7 @@ function App() {
                 <p className="accuracy-text" style={{ fontWeight: 'bold', margin: '0' }}>
                   Overall Accuracy: {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
                 </p>
-                <p className="accuracy-text" style={{ fontSize: '1.2rem', margin: '5px 0 0 0', color: '#666' }}>
+                <p style={{ fontSize: '1.2rem', margin: '5px 0 0 0', color: '#666' }}>
                   Projected Record: {systemStats.standard.count}-{systemStats.total - systemStats.standard.count}
                 </p>
               </div>
@@ -970,7 +970,7 @@ function App() {
                 <p className="accuracy-text" style={{ fontWeight: '600', margin: '0' }}>
                   Conservative Accuracy: {systemStats.conservative.pct}% ({systemStats.conservative.count}/{systemStats.total})
                 </p>
-                <p className="accuracy-text" style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
+                <p style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
                   Projected Record: {systemStats.conservative.count}-{systemStats.total - systemStats.conservative.count}
                 </p>
               </div>
@@ -978,7 +978,7 @@ function App() {
                 <p className="accuracy-text" style={{ fontWeight: '600', margin: '0' }}>
                   Aggressive Accuracy: {systemStats.aggressive.pct}% ({systemStats.aggressive.count}/{systemStats.total})
                 </p>
-                <p className="accuracy-text" style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
+                <p style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>
                   Projected Record: {systemStats.aggressive.count}-{systemStats.total - systemStats.aggressive.count}
                 </p>
               </div>
