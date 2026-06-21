@@ -257,3 +257,154 @@ main {
     font-size: 1.2rem; /* Scales down smoothly for phones */
   }
 }
+
+/* Dashboard Card Container */
+.coach-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* 3-Column Desktop Grid Layout */
+.executive-matchup-grid {
+  display: grid;
+  /* INCREASED center column from 140px to 190px to prevent text wrapping */
+  grid-template-columns: 1fr 190px 1fr; 
+  gap: 10px; /* Snugged up the gap slightly to compensate for the wider center */
+  align-items: center; 
+  text-align: center;
+  padding: 20px 15px; /* Ensures interior contents don't push against the card edges */
+}
+
+.team-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center-aligns all elements within home and away columns */
+  justify-content: center;
+}
+
+.home-align { align-items: flex-end; text-align: right; }
+.away-align { align-items: flex-start; text-align: left; }
+
+.labels-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value, .label-text {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important; 
+  font-size: 1.1rem; /* Slightly trimmed from 1.15rem for a cleaner fit */
+  white-space: nowrap; /* CRITICAL: Prevents any words from dropping down to a second line */
+}
+
+/* Ensure the labels have a tiny bit of side padding if columns compress */
+.label-text {
+  padding: 0 4px;
+  font-weight: 500;
+  color: #7f8c8d; /* Clean, slightly muted slate color for stat titles */
+}
+
+/* Typography Scale */
+.team-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 8px 0;
+  height: 32px;
+}
+
+.massive-text { font-weight: 800; color: #2c3e50; }
+.large-text { font-weight: 700; }
+.normal-text { color: #34495e; }
+.small-subtext { font-size: 0.85rem; font-weight: 400; color: #95a5a6; margin-left: 4px; }
+.font-bold { font-weight: 700; }
+
+.team-label-title {
+  height: 32px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin: 8px 0 !important;
+}
+
+/* Spacing and Accent Highlights */
+.metric-gap, .label-spacer, .label-space-divider {
+  display: none !important;
+}
+.label-space-divider { height: 16px; }
+.text-accent { color: #16a085; } /* System Score Teal */
+.text-win-prob { color: #2980b9; } /* Win Prob Blue */
+
+/* RESPONSIVE MOBILE OVERRIDE: Drops the middle labels column, stacks teams side-by-side */
+@media (max-width: 768px) {
+  .executive-matchup-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .labels-column {
+    display: none; /* Hide the middle label column on mobile phones */
+  }
+  .home-align, .away-align {
+    align-items: center;
+    text-align: center;
+  }
+  /* Inline label indicators show up next to metrics on mobile if needed */
+}
+
+.team-logo-container {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+/* Force image to scale correctly inside its block container */
+.dashboard-team-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Ensure centering consistency for stacked mobile screens */
+@media (max-width: 768px) {
+  .team-logo-container {
+    margin: 0 auto 8px auto;
+  }
+}
+
+/* Container framework layout for tracking graphs */
+.dashboard-analytics-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 25px;
+}
+
+/* Force each sub-section to occupy equal half-widths */
+.dashboard-analytics-row > div {
+  flex: 1;
+  min-width: 0; /* CRITICAL: Stops Recharts containers from stretching infinitely */
+}
+
+/* Ensure mobile layout optimization screens pull neatly down the line */
+@media (max-width: 1024px) {
+  .dashboard-analytics-row {
+    flex-direction: column;
+    gap: 25px;
+  }
+}
