@@ -3,7 +3,8 @@ import axios from 'axios';
 import './App.css';
 import { 
   ResponsiveContainer, 
-  BarChart, 
+  BarChart,
+  ComposedChart, 
   Bar, 
   XAxis, 
   YAxis, 
@@ -120,6 +121,8 @@ const PerformanceByPeriod = ({ periodStats, homeName = "Home", awayName = "Away"
   const homeKey = sampleKeys[0] || 'Home';
   const awayKey = sampleKeys[1] || 'Away';
 
+  const { homeColor, awayColor } = getChartColors(homeName, awayName);
+
   return (
     <div className="coach-card" style={{ flex: 1 }}>
       <h3 className="section-title">{activeMetricLabel} by Period</h3>
@@ -131,8 +134,8 @@ const PerformanceByPeriod = ({ periodStats, homeName = "Home", awayName = "Away"
             <YAxis stroke="#7f8c8d" />
             <Tooltip cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
             <Legend verticalAlign="top" height={36} />
-            <Bar dataKey={homeKey} name={homeName} fill="#16a085" radius={[4, 4, 0, 0]} />
-            <Bar dataKey={awayKey} name={awayName} fill="#2980b9" radius={[4, 4, 0, 0]} />
+            <Bar dataKey={homeKey} name={homeName} fill={homeColor} radius={[4, 4, 0, 0]} />
+            <Bar dataKey={awayKey} name={awayName} fill={awayColor} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -157,6 +160,8 @@ const PossessionStintTimeline = ({ timelineData, homeName = "Home", awayName = "
   const homeKey = sampleKeys[0] || 'Home';
   const awayKey = sampleKeys[1] || 'Away';
 
+  const { homeColor, awayColor } = getChartColors(homeName, awayName);
+
   return (
     <div className="coach-card" style={{ flex: 1 }}>
       <h3 className="section-title">{activeMetricLabel} by Poss. Intervals</h3>
@@ -173,7 +178,7 @@ const PossessionStintTimeline = ({ timelineData, homeName = "Home", awayName = "
               type="monotone" 
               dataKey={homeKey} 
               name={homeName} 
-              stroke="#16a085" 
+              stroke={homeColor} 
               strokeWidth={3} 
               dot={{ r: 4 }} 
               activeDot={{ r: 7 }} 
@@ -182,7 +187,7 @@ const PossessionStintTimeline = ({ timelineData, homeName = "Home", awayName = "
               type="monotone" 
               dataKey={awayKey} 
               name={awayName} 
-              stroke="#2980b9" 
+              stroke={awayColor} 
               strokeWidth={3} 
               dot={{ r: 4 }} 
               activeDot={{ r: 7 }} 
@@ -370,6 +375,9 @@ function ShotDistributionAndExecution({ gameSummary }) {
 
   const home = gameSummary.Home;
   const away = gameSummary.Away;
+
+  const { homeColor, awayColor } = getChartColors(home.name, away.name);
+
   console.log("PIE DATA PAYLOAD DIAGNOSTIC:", { homeBreakdown: home?.breakdown, awayBreakdown: away?.breakdown });
   // Section 2: Doughnut / Pie Chart Data Transformation
   // Helper utility to safely convert percentages like '40.5%' into numbers like 40.5
@@ -380,6 +388,19 @@ function ShotDistributionAndExecution({ gameSummary }) {
     const parsed = parseFloat(baseVal.replace('%', ''));
     return isNaN(parsed) ? 0 : parsed;
   };
+
+  const calculateExpected7_11 = (breakdown) => {
+      if (!breakdown || !breakdown.s7_11) return 1.75;
+      const parts = breakdown.s7_11.toString().split('/');
+      const p7 = parseFloat(parts[0]?.replace('%', '')) || 0;
+      const p11 = parseFloat(parts[1]?.replace('%', '')) || 0;
+      if (p7 + p11 === 0) return 1.75;
+      // Formula: (7*7s + 11*11s) / (4 * (7s + 11s))
+      return (7 * p7 + 11 * p11) / (4 * (p7 + p11));
+  };
+
+  const homeExpected7_11 = calculateExpected7_11(home.breakdown);
+  const awayExpected7_11 = calculateExpected7_11(away.breakdown);
 
   const homePieData = [
     { name: "6's", value: parsePercent(home.breakdown?.s6), color: '#2ecc71'},
@@ -403,7 +424,7 @@ function ShotDistributionAndExecution({ gameSummary }) {
   const executionData = [
     { name: "6's", expected: 1.50, homeAct: (parseFloat(home.execution.e6) || 0).toFixed(2), awayAct: (parseFloat(away.execution.e6) || 0).toFixed(2) },
     { name: "4's", expected: 1.00, homeAct: (parseFloat(home.execution.e4) || 0).toFixed(2), awayAct: (parseFloat(away.execution.e4) || 0).toFixed(2) },
-    { name: "7/11's", expected: 1.75, homeAct: (parseFloat(home.execution.e7_11) || 0).toFixed(2), awayAct: (parseFloat(away.execution.e7_11) || 0).toFixed(2) },
+    { name: "7/11's", expectedHome: parseFloat(homeExpected7_11.toFixed(2)), expectedAway: parseFloat(awayExpected7_11.toFixed(2)), homeAct: (parseFloat(home.execution.e7_11) || 0).toFixed(2), awayAct: (parseFloat(away.execution.e7_11) || 0).toFixed(2) },
     { name: "3's", expected: 0.75, homeAct: (parseFloat(home.execution.e3) || 0).toFixed(2), awayAct: (parseFloat(away.execution.e3) || 0).toFixed(2) },
     { name: "1's", expected: 0.25, homeAct: (parseFloat(home.execution.e1) || 0).toFixed(2), awayAct: (parseFloat(away.execution.e1) || 0).toFixed(2) },
   ];
@@ -524,13 +545,16 @@ function ShotDistributionAndExecution({ gameSummary }) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={executionData} layout="vertical" margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
-              <XAxis type="number" domain={[0, 2.5]} stroke="#718096" fontSize={11} />
+              <XAxis type="number" domain={[0, 2.5]} ticks = {[0.0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5]} tickFormatter={(value) => value.toFixed(2)} stroke="#718096" fontSize={11} />
               <YAxis dataKey="name" type="category" stroke="#718096" fontSize={11} tickLine={false} />
               <Tooltip formatter={(value) => [`${value} PPS`, 'Execution']} />
               <Legend wrapperStyle={{ fontSize: '15px' }} />
-              <Bar dataKey="homeAct" name={`${home.name} PPS`} fill="#2c3e50" radius={[0, 3, 3, 0]} barSize={40} />
-              <Bar dataKey="awayAct" name={`${away.name} PPS`} fill="#e74c3c" radius={[0, 3, 3, 0]} barSize={40} />
-              <Bar dataKey="expected" name="Expected Benchmark" fill="#16a085" radius={[0, 3, 3, 0]} barSize={4} opacity={0.6} />
+              <Bar dataKey="homeAct" name={`${home.name} PPS`} fill={homeColor} radius={[0, 3, 3, 0]} barSize={40} />
+              <Bar dataKey="awayAct" name={`${away.name} PPS`} fill={awayColor} radius={[0, 3, 3, 0]} barSize={40} />
+
+              {/* Vertical Baseline Markers linking each category locale across the top */}
+              {/*<Line type="monotone" dataKey="expectedHome" name={`${home.name} Benchmark`} stroke="#16a085" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 4 }} activeDot={{ r: 6 }} /> */}
+              {/*<Line type="monotone" dataKey="expectedAway" name={`${away.name} Benchmark`} stroke="#e67e22" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 4 }} activeDot={{ r: 6 }} />*/}
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -549,6 +573,43 @@ const getMetricLabel = (metricKey) => {
     actualPoints: 'Actual Points scored'
   };
   return mapping[metricKey] || 'Metrics';
+};
+
+const TEAM_COLORS = {
+  "West Liberty": {"primary": "#FFCD32", "secondary": "#000000"},
+  "Fairmont": {"primary": "#6F313C", "secondary": "#FFFFFF"},
+  "Wheeling": {"primary": "#E71636", "secondary": "#FCBF17"},
+  "Charleston": {"primary": "#992244", "secondary": "#FFD200"},
+  "Concord": {"primary": "#74033B", "secondary": "#86949F"},
+  "Glenville": {"primary": "#0051BA", "secondary": "#FFFFFF"},
+  "Frostburg": {"primary": "#E91F2d", "secondary": "#000000"},
+  "D&E": {"primary": "#D21C2E", "secondary": "#FFFFFF"},
+  "Point Park": {"primary": "#6D8D24", "secondary": "#FDB813"},
+  "WVSU": {"primary": "#CFAB2B", "secondary": "#000000"},
+  "Salem": {"primary": "#149348", "secondary": "#FFFFFF"}
+};
+const DEFAULT_HOME_COLOR = "#16a085";
+const DEFAULT_AWAY_COLOR = "#2980b9";
+
+export const getChartColors = (homeName, awayName) => {
+  const homeColors = TEAM_COLORS[homeName] || { primary: DEFAULT_HOME_COLOR, secondary: "#ffffff" };
+  const awayColors = TEAM_COLORS[awayName] || { primary: DEFAULT_AWAY_COLOR, secondary: "#ffffff" };
+
+  let homeChartColor = homeColors.primary;
+  let awayChartColor = awayColors.primary;
+
+  // Resolve matching color conflicts
+  if (homeChartColor.toLowerCase() === awayChartColor.toLowerCase()) {
+    // Fallback to Away team's secondary color if it isn't white or transparent
+    if (awayColors.secondary && !["#ffffff", "#fff", "#000000"].includes(awayColors.secondary.toLowerCase())) {
+      awayChartColor = awayColors.secondary;
+    } else {
+      // Hard fallback if primary and secondary conflict (e.g., Gray/Neutral contrast)
+      awayChartColor = "#e74c3c"; 
+    }
+  }
+
+  return { homeColor: homeChartColor, awayColor: awayChartColor };
 };
 
 // ==========================================
