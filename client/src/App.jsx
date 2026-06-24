@@ -16,7 +16,10 @@ import {
   ReferenceLine,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  ScatterChart,
+  Scatter,
+  ZAxis
 } from 'recharts';
 
 const getApiBaseUrl = () => {
@@ -64,7 +67,7 @@ function SystemDifferentialChart({ rawData }) {
     return bins
       .map(b => ({
         range: b.label,
-        "Win Probability": b.totalCount > 0 ? Math.round((b.correctCount / b.totalCount) * 100) : 0,
+        "System Accuracy": b.totalCount > 0 ? Math.round((b.correctCount / b.totalCount) * 100) : 0,
         "Game Count": b.totalCount
       }))
       .filter(b => b["Game Count"] > 0);
@@ -74,8 +77,8 @@ function SystemDifferentialChart({ rawData }) {
     <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', maxWidth: '800px', margin: '20px auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ textAlign: 'left' }}>
-          <h3 style={{ margin: 0 }}>Win Probability by System Differential</h3>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>How predictive is the SQ/RQ scoring gap?</p>
+          <h3 style={{ margin: 0 }}>Game Prediction Accuracy by System Score Differential</h3>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>How predictive is the system as the System Score gap increases?</p>
         </div>
         <div>
           <label style={{ fontSize: '0.85rem', fontWeight: 'bold', marginRight: '5px' }}>BIN SIZE: </label>
@@ -93,9 +96,9 @@ function SystemDifferentialChart({ rawData }) {
             <YAxis stroke="#718096" fontSize={12} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <Tooltip 
               cursor={{ fill: '#EDF2F7', opacity: 0.4 }}
-              formatter={(value, name) => [name === "Win Probability" ? `${value}%` : value, name]}
+              formatter={(value, name) => [name === "System Accuracy" ? `${value}%` : value, name]}
             />
-            <Bar dataKey="Win Probability" fill="#16a085" radius={[4, 4, 0, 0]} barSize={45} />
+            <Bar dataKey="System Accuracy" fill='#2980b9' radius={[4, 4, 0, 0]} barSize={45} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -611,6 +614,166 @@ export const getChartColors = (homeName, awayName) => {
 
   return { homeColor: homeChartColor, awayColor: awayChartColor };
 };
+
+// ==========================================
+// SUB-COMPONENT: TEAM PERFORMANCE VS SYSTEM SCATTERPLOT
+// ==========================================
+
+
+// ==========================================
+// SUB-COMPONENT: TEAM PERFORMANCE VS SYSTEM SCATTERPLOT
+// ==========================================
+function TeamPerformanceScatterPlot({ systemData }) {
+  const [metric, setMetric] = useState('PPS'); // 'PPS' or 'PPP'
+
+  // Transform system performance data rows for the scatter plot
+  const chartData = useMemo(() => {
+    if (!systemData || !Array.isArray(systemData)) return [];
+    
+    return systemData.map(row => {
+      // Direct exact match to your index.js backend object fields
+      const expectedPPS = parseFloat(row.expectedPPS || 0);
+      const actualPPS = parseFloat(row.actualPPS || 0);
+      const expectedPPP = parseFloat(row.expectedPPS || 0);
+      const actualPPP = parseFloat(row.actualPPP || 0);
+      const teamLabel = row.name;
+
+      return {
+        teamName: teamLabel,
+        x: metric === 'PPS' ? expectedPPS : expectedPPP,
+        y: metric === 'PPS' ? actualPPS : actualPPP,
+      };
+    }).filter(d => !isNaN(d.x) && !isNaN(d.y) && d.x !== 0); // Safe boundary filter
+  }, [systemData, metric]);
+
+  // Calculate dynamic chart domains to frame points nicely
+  const domains = useMemo(() => {
+    if (chartData.length === 0) return { minX: 0.8, maxX: 1.4, minY: 0.8, maxY: 1.4 };
+    const xVals = chartData.map(d => d.x);
+    const yVals = chartData.map(d => d.y);
+    return {
+      minX: Math.min(...xVals) * 0.98,
+      maxX: Math.max(...xVals) * 1.02,
+      minY: Math.min(...yVals) * 0.98,
+      maxY: Math.max(...yVals) * 1.02
+    };
+  }, [chartData]);
+
+  // Custom Data Point Component: Renders the team logo inside an SVG image boundary
+  const CustomLogoNode = (props) => {
+    const { cx, cy, payload } = props;
+    if (cx === undefined || cy === undefined || isNaN(cx) || isNaN(cy)) return null;
+    
+    const logoSrc = `/MEC Logos/${payload.teamName}.png`;
+    const size = 32; // Square dimensions for team logos
+
+    return (
+      <g transform={`translate(${cx - size / 2}, ${cy - size / 2})`}>
+        <image
+          href={logoSrc}
+          width={size}
+          height={size}
+          onError={(e) => {
+            // Invisible placeholder fallback if image path fails to resolve
+            e.target.style.display = 'none';
+          }}
+        />
+        <circle cx={size / 2} cy={size / 2} r={size / 2} fill="transparent" stroke="rgba(0,0,0,0.05)" strokeWidth={1} />
+      </g>
+    );
+  };
+
+  return (
+    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', maxWidth: '1000px', margin: '25px auto' }}>
+      
+      {/* HEADER & DROPDOWN CONTROLS */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ textAlign: 'left' }}>
+          <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '1.25rem', fontWeight: 'bold' }}>Team Performance vs. System Baselines</h3>
+          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#718096' }}>Graphing Actual Efficiency (Y-Axis) vs. Expected System Efficiency (X-Axis).</p>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4a5568', textTransform: 'uppercase' }}>Metric Filter: </label>
+          <select 
+            value={metric} 
+            onChange={(e) => setMetric(e.target.value)} 
+            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e0', fontWeight: 'bold', color: '#2c3e50', backgroundColor: '#f8fafc', cursor: 'pointer' }}
+          >
+            <option value="PPS">Points Per Shot (PPS)</option>
+            <option value="PPP">Points Per Possession (PPP)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* SCATTER PLOT CHART */}
+      <div style={{ height: '480px', width: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 20, right: 30, left: 15, bottom: 25 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+            
+            <XAxis 
+              type="number" 
+              dataKey="x" 
+              name={`Expected ${metric}`} 
+              domain={[domains.minX, domains.maxX]}
+              tickFormatter={(v) => v.toFixed(2)}
+              stroke="#718096"
+              label={{ value: `Expected ${metric} (System Model Baseline)`, position: 'insideBottom', offset: -15, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
+            />
+            
+            <YAxis 
+              type="number" 
+              dataKey="y" 
+              name={`Actual ${metric}`} 
+              domain={[domains.minY, domains.maxY]}
+              tickFormatter={(v) => v.toFixed(2)}
+              stroke="#718096"
+              label={{ value: `Actual Executed ${metric}`, angle: -90, position: 'insideLeft', offset: -5, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
+            />
+
+            <ZAxis range={[100, 100]} />
+
+            <Tooltip 
+              cursor={{ strokeDasharray: '3 3', stroke: '#a0aec0' }}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  const diff = data.y - data.x;
+                  return (
+                    <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)' }}>
+                      <strong style={{ display: 'block', borderBottom: '1px solid #475569', paddingBottom: '4px', marginBottom: '6px', fontSize: '0.9rem' }}>{data.teamName}</strong>
+                      <div>Expected {metric}: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{data.x.toFixed(2)}</span></div>
+                      <div>Actual {metric}: <span style={{ color: '#34d399', fontWeight: 'bold' }}>{data.y.toFixed(2)}</span></div>
+                      <div style={{ marginTop: '4px', borderTop: '1px dashed #475569', paddingTop: '4px', fontSize: '0.75rem', color: '#cbd5e0' }}>
+                        Differential: <span style={{ fontWeight: 'bold', color: diff >= 0 ? '#34d399' : '#f87171' }}>{diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            
+            {/* Diagonal Identity Line (Y = X) */}
+            <ReferenceLine 
+              segment={[{ x: Math.min(domains.minX, domains.minY), y: Math.min(domains.minX, domains.minY) }, { x: Math.max(domains.maxX, domains.maxY), y: Math.max(domains.maxX, domains.maxY) }]} 
+              stroke="#cbd5e0" 
+              strokeWidth={2}
+              strokeDasharray="4 4"
+            />
+
+            <Scatter 
+              name="Teams" 
+              data={chartData} 
+              shape={<CustomLogoNode />} 
+            />
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
 
 // ==========================================
 // MAIN APP COMPONENT EXPORT
@@ -1207,7 +1370,7 @@ function App() {
             {selectedTeamStats && (
               <>
                 <div style={{ marginTop: '20px', textAlign: 'left' }}>
-                  <h3>{selectedTeamStats.teamName} ({selectedTeamStats.record})</h3>
+                  <h3 style = {{textAlign: 'center'}}>{selectedTeamStats.teamName} ({selectedTeamStats.record})</h3>
                   <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
@@ -1216,11 +1379,11 @@ function App() {
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>Offense</td>
+                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: ' 1px solid #2c3e50' }}>Offense</td>
                         <td>{selectedTeamStats.off.sysG}</td><td rowSpan="2">{selectedTeamStats.shot_margin}</td><td>{selectedTeamStats.off.possG}</td><td>{selectedTeamStats.shotsGained100}</td><td>{selectedTeamStats.off.result_q}</td><td>{selectedTeamStats.off.shot_q}</td><td>{selectedTeamStats.off.stint_q}</td><td>{selectedTeamStats.off.oRebPct}</td><td>{selectedTeamStats.off.ftRebG}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>Defense</td>
+                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #2c3e50' }}>Defense</td>
                         <td>{selectedTeamStats.def.sysG}</td><td>{selectedTeamStats.def.possG}</td><td>{selectedTeamStats.shotsGained100d}</td><td>{selectedTeamStats.def.result_q}</td><td>{selectedTeamStats.def.shot_q}</td><td>{selectedTeamStats.def.stint_q}</td><td>{selectedTeamStats.def.oRebPct}</td><td>{selectedTeamStats.def.ftRebG}</td>
                       </tr>
                     </tbody>
@@ -1326,10 +1489,29 @@ function App() {
         {/* MAINTAINED SYSTEM VERIFICATION TAB                        */}
         {/* ========================================================= */}
         {activeTab === 'System' && systemStats && (
-          <section style={{ textAlign: 'center', marginTop: '40px' }}>
-            <h1 style={{ marginBottom: '30px' }}>Scoring System Results</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div>
+          <section className="systems-tab-container" style={{ maxWidth: '1400px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h1>Shot Quality Scoring System</h1>
+            <h2 style={{marginBottom: '24px', fontSize: '1.0rem'}}>A Contextual Expected Value Framework for Comprehensive Basketball Evaluation and Decision-Making</h2>
+            {/*<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>*/}
+
+            
+            
+            
+
+            <div style={{ backgroundColor: '#2c3e50', color: '#fff', padding: '30px 20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', textAlign: 'center', borderBottom: '6px solid #2980b9' }}>
+              <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#bdc3c7', fontWeight: 'bold' }}>
+                Overall Accuracy
+              </span>
+              <h2 style={{ fontSize: '3.5rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
+                {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
+              </h2>
+              <h3 style={{ fontSize: '1.0rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
+                Projected Record: {systemStats.standard.count}-{systemStats.total - systemStats.standard.count}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#ecf0f1', opacity: 0.95 }}>
+                *Accuracy of game outcomes picked by System Score.
+              </p>
+              {/*<div>
                 <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0' }}>Overall Accuracy: {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})</p>
                 <p style={{ fontSize: '1.2rem', margin: '5px 0 0 0', color: '#666' }}>Projected Record: {systemStats.standard.count}-{systemStats.total - systemStats.standard.count}</p>
               </div>
@@ -1340,29 +1522,92 @@ function App() {
               <div>
                 <p style={{ fontSize: '1.4rem', fontWeight: '600', margin: '0' }}>Aggressive Accuracy: {systemStats.aggressive.pct}% ({systemStats.aggressive.count}/{systemStats.total})</p>
                 <p style={{ fontSize: '1.0rem', margin: '2px 0 0 0', color: '#666' }}>Projected Record: {systemStats.aggressive.count}-{systemStats.total - systemStats.aggressive.count}</p>
-              </div>
+              </div>*/}
+            </div>
+            {/* Conservative Baseline Card */}
+            <div style={{ backgroundColor: '#fff', padding: '10px 5px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', textAlign: 'center', border: '1px solid #e2e8f0', borderBottom: '6px solid #16a085' }}>
+              <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#7f8c8d', fontWeight: 'bold' }}>
+                Conservative Baseline
+              </span>
+              <h2 style={{ fontSize: '2.8rem', margin: '6px 0', color: '#16a085', fontWeight: '700', lineHeight: '1' }}>
+                {systemStats.conservative.pct}% ({systemStats.conservative.count}/{systemStats.total})
+              </h2>
+              <h3 style={{ fontSize: '1.0rem', margin: '6px 0', color: '#16a085', fontWeight: '800', lineHeight: '1' }}>
+                Projected Record: {systemStats.aggressive.count}-{systemStats.total - systemStats.aggressive.count}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#7f8c8d' }}>
+                *Accuracy if all games within 10 System Score points were counted as System losses.
+              </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '30px', textAlign: 'left' }}>
-              <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Scoring Environment</h2>
+            {/* Aggressive Threshold Card */}
+            <div style={{ backgroundColor: '#fff', padding: '10px 5px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', textAlign: 'center', border: '1px solid #e2e8f0', borderBottom: '6px solid #e67e22' }}>
+              <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#7f8c8d', fontWeight: 'bold' }}>
+                Aggressive Threshold
+              </span>
+              <h2 style={{ fontSize: '2.8rem', margin: '6px 0', color: '#e67e22', fontWeight: '700', lineHeight: '1' }}>
+                {systemStats.aggressive.pct}% ({systemStats.aggressive.count}/{systemStats.total})
+              </h2>
+              <h3 style={{ fontSize: '1.0rem', margin: '6px 0', color: '#e67e22', fontWeight: '800', lineHeight: '1' }}>
+                Projected Record: {systemStats.conservative.count}-{systemStats.total - systemStats.conservative.count}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#7f8c8d' }}>
+                *Accuracy if all games within 5 System Score points were counted as System wins.
+              </p>
+            </div>
+
+            {/* SECTION HEADER BLOCK */}
+            <div style={{ paddingTop: '25px', borderBottom: '1px solid #e2e8f0', marginBottom: '30px' }}>
+              <h2 style={{ margin: 0, color: '#2c3e50', fontSize: '1.6rem', fontWeight: '700' }}>
+                Model Validation
+              </h2>
+              <p style={{ margin: '4px 0 0 0', color: '#7f8c8d', fontSize: '0.95rem' }}>
+                Analyzing historical predictive thresholds alongside live structural scoring environments.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '25px' }}>{systemStats?.rawDifferentials && <SystemDifferentialChart rawData={systemStats.rawDifferentials} />}</div>
+
+            {/* ITEM 3: SCORING ENVIRONMENT TABLE (Clean, focused layout) */}
+            <div style={{ 
+              backgroundColor: '#fff', 
+              padding: '24px', 
+              borderRadius: '12px', 
+              boxShadow: '0 4px 10px rgba(0,0,0,0.02)', 
+              border: '1px solid #e2e8f0', 
+              marginBottom: '45px' 
+            }}>
+              <div style={{ marginBottom: '15px' }}>
+                <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '1.25rem', fontWeight: '600' }}>
+                  Scoring Environment
+                </h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '0.85rem', color: '#7f8c8d' }}>
+                  Examining the accuracy of the seven different shot quality 'buckets'
+                </p>
+              </div>
+              {/*<h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Scoring Environment</h2>*/}
               <div style={{ overflowX: 'auto', width: '100%' }}>
                 <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+                    <tr style={{ backgroundColor: '#2c3e50', color: 'white', border: '1px solid #2c3e50' }}>
                       <th>Shot Type</th><th>Actual PPS</th><th>Expected PPS</th><th>PPS Difference</th><th>Shot Variation</th>
                     </tr>
                   </thead>
                   <tbody>
                     {systemStats.shotTable.map((row, idx) => (
                       <tr key={idx}>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #ddd' }}>{row.type}</td><td>{row.actual}</td><td>{row.expected}</td>
-                        <td style={{ color: parseFloat(row.diff) >= 0 ? 'green' : 'red' }}>{parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}</td><td>{row.rsd}</td>
+                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #2c3e50' }}>{row.type}</td><td style={{border: '1px solid #2c3e50'}}>{row.actual}</td><td style={{border: '1px solid #2c3e50'}}>{row.expected}</td>
+                        <td style={{ color: parseFloat(row.diff) >= 0 ? 'green' : 'red', border: '1px solid #2c3e50' }}>{parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}</td><td style={{border: '1px solid #2c3e50'}}>{row.rsd}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
+            
+            
+            {/* SCATTER PLOT INJECTED HERE AT THE TOP OF THE SYSTEM VIEW */}
+            <TeamPerformanceScatterPlot systemData={systemStats.teamTable} />
 
             <div style={{ marginTop: '40px', width: '100%', textAlign: 'left' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Team Performance vs. System</h2>
@@ -1387,7 +1632,6 @@ function App() {
               </div>
             </div>
             
-            {systemStats?.rawDifferentials && <SystemDifferentialChart rawData={systemStats.rawDifferentials} />}
             
             <hr style={{ margin: '40px auto 20px auto', width: '90%', border: '0', borderTop: '1px solid #ddd' }} />
             <p style={{ margin: 20, fontSize: '1.2rem', color: '#666' }}>Behind the dashboard is a complete analytical framework — explore the full research, methodology, and findings below.</p>

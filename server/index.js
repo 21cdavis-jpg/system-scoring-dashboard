@@ -481,12 +481,12 @@ app.get('/api/system-accuracy', (req, res) => {
                 gb: s.sysWins - s.wins,
                 matched: s.matched,
                 mismatched: s.mismatched,
-                expectedPPS: expPPS.toFixed(3),
-                actualPPS: actPPS.toFixed(3),
-                ppsDiff: (actPPS - expPPS).toFixed(3),
-                expectedPPP: expPPP.toFixed(3),
-                actualPPP: actPPP.toFixed(3),
-                pppDiff: (actPPP - expPPP).toFixed(3)
+                expectedPPS: expPPS.toFixed(2),
+                actualPPS: actPPS.toFixed(2),
+                ppsDiff: (actPPS - expPPS).toFixed(2),
+                expectedPPP: expPPP.toFixed(2),
+                actualPPP: actPPP.toFixed(2),
+                pppDiff: (actPPP - expPPP).toFixed(2)
             };
         });
 
@@ -501,9 +501,9 @@ app.get('/api/system-accuracy', (req, res) => {
             }
             return {
                 type: type + "'s",
-                actual: actual.toFixed(3),
-                expected: expected.toFixed(3),
-                diff: (actual - expected).toFixed(3),
+                actual: actual.toFixed(2),
+                expected: expected.toFixed(2),
+                diff: (actual - expected).toFixed(2),
                 rsd: (rsd * 100).toFixed(1) + "%"
             };
         });
