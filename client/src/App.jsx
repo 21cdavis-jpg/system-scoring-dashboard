@@ -765,96 +765,98 @@ function TeamPerformanceScatterPlot({ systemData }) {
       )}
       
       {/* SCATTER PLOT CHART */}
-      <div style={{ height: '480px', width: '100%' }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 20, right: 30, left: 15, bottom: 25 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-            
-            <XAxis 
-              xAxisId="x-axis"
-              type="number" 
-              dataKey="x" 
-              name={`Expected ${metric}`} 
-              domain={[domains.minX, domains.maxX]}
-              tickFormatter={(v) => v.toFixed(2)}
-              stroke="#718096"
-              label={{ value: `Expected ${metric} (System Model Baseline)`, position: 'insideBottom', offset: -15, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
-            />
-            
-            <YAxis 
-              yAxisId="y-axis"
-              type="number" 
-              dataKey="y" 
-              name={`Actual ${metric}`} 
-              domain={[domains.minY, domains.maxY]}
-              tickFormatter={(v) => v.toFixed(2)}
-              stroke="#718096"
-              label={{ value: `Actual Executed ${metric}`, angle: -90, position: 'insideLeft', offset: -5, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
-            />
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ height: '480px', width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 20, right: 30, left: 15, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+              
+              <XAxis 
+                xAxisId="x-axis"
+                type="number" 
+                dataKey="x" 
+                name={`Expected ${metric}`} 
+                domain={[domains.minX, domains.maxX]}
+                tickFormatter={(v) => v.toFixed(2)}
+                stroke="#718096"
+                label={{ value: `Expected ${metric} (System Model Baseline)`, position: 'insideBottom', offset: -15, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
+              />
+              
+              <YAxis 
+                yAxisId="y-axis"
+                type="number" 
+                dataKey="y" 
+                name={`Actual ${metric}`} 
+                domain={[domains.minY, domains.maxY]}
+                tickFormatter={(v) => v.toFixed(2)}
+                stroke="#718096"
+                label={{ value: `Actual Executed ${metric}`, angle: -90, position: 'insideLeft', offset: -5, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
+              />
 
-            <ZAxis range={[32, 32]} />
+              <ZAxis range={[32, 32]} />
 
-            {/*<Tooltip 
-              cursor={{ strokeDasharray: '3 3', stroke: '#a0aec0' }}
-              trigger="hover"
-              shared={false}
-              content={({ active, payload }) => {
-                console.log("Tooltip Core Check -> Active:", active, "Payload Length:", payload?.length);
-                if (payload && payload.length > 0) {
-                  console.log("Payload Content:", payload[0].payload);
-                }
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload;
-                  const diff = data.y - data.x;
-                  return (
-                    <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)' }}>
-                      <strong style={{ display: 'block', borderBottom: '1px solid #475569', paddingBottom: '4px', marginBottom: '6px', fontSize: '0.9rem' }}>{data.teamName}</strong>
-                      <div>Expected {metric}: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{data.x.toFixed(2)}</span></div>
-                      <div>Actual {metric}: <span style={{ color: '#34d399', fontWeight: 'bold' }}>{data.y.toFixed(2)}</span></div>
-                      <div style={{ marginTop: '4px', borderTop: '1px dashed #475569', paddingTop: '4px', fontSize: '0.75rem', color: '#cbd5e0' }}>
-                        Differential: <span style={{ fontWeight: 'bold', color: diff >= 0 ? '#34d399' : '#f87171' }}>{diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}</span>
+              {/*<Tooltip 
+                cursor={{ strokeDasharray: '3 3', stroke: '#a0aec0' }}
+                trigger="hover"
+                shared={false}
+                content={({ active, payload }) => {
+                  console.log("Tooltip Core Check -> Active:", active, "Payload Length:", payload?.length);
+                  if (payload && payload.length > 0) {
+                    console.log("Payload Content:", payload[0].payload);
+                  }
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    const diff = data.y - data.x;
+                    return (
+                      <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)' }}>
+                        <strong style={{ display: 'block', borderBottom: '1px solid #475569', paddingBottom: '4px', marginBottom: '6px', fontSize: '0.9rem' }}>{data.teamName}</strong>
+                        <div>Expected {metric}: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{data.x.toFixed(2)}</span></div>
+                        <div>Actual {metric}: <span style={{ color: '#34d399', fontWeight: 'bold' }}>{data.y.toFixed(2)}</span></div>
+                        <div style={{ marginTop: '4px', borderTop: '1px dashed #475569', paddingTop: '4px', fontSize: '0.75rem', color: '#cbd5e0' }}>
+                          Differential: <span style={{ fontWeight: 'bold', color: diff >= 0 ? '#34d399' : '#f87171' }}>{diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}</span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />*/}
+                    );
+                  }
+                  return null;
+                }}
+              />*/}
 
-            {/* Diagonal Identity Line (Y = X) */}
-            <ReferenceLine 
-              xAxisId="x-axis"
-              yAxisId="y-axis"
-              ifOverflow='extendDomain'
-              segment={[{ x: Math.min(domains.minX, domains.minY), y: Math.min(domains.minX, domains.minY) }, { x: Math.max(domains.maxX, domains.maxY), y: Math.max(domains.maxX, domains.maxY) }]} 
-              stroke="#ff0000" 
-              strokeWidth={2}
-              strokeDasharray="4 4"
-            />
+              {/* Diagonal Identity Line (Y = X) */}
+              <ReferenceLine 
+                xAxisId="x-axis"
+                yAxisId="y-axis"
+                ifOverflow='extendDomain'
+                segment={[{ x: Math.min(domains.minX, domains.minY), y: Math.min(domains.minX, domains.minY) }, { x: Math.max(domains.maxX, domains.maxY), y: Math.max(domains.maxX, domains.maxY) }]} 
+                stroke="#ff0000" 
+                strokeWidth={2}
+                strokeDasharray="4 4"
+              />
 
-            <Scatter  
-              name="Teams"
-              xAxisId="x-axis"
-              yAxisId="y-axis"
-              data={chartData} 
-              shape={renderShape} 
-              //dataKey="y"
-              //fill="#8884d8"
-            />
-            {/*<Scatter 
-              xAxisId="x-axis"
-              yAxisId="y-axis"
-              name="Teams" 
-              data={chartData} 
-              datakey="y"
-              fill="transparent"
-              style={{ cursor: 'pointer' }}
-            />*/}
-            {/* LAYER 2: Transparent functional node layer overlaid cleanly on top to capture hovers natively
-            <Scatter data={chartData} shape={<RenderTransparentScatterDot />} /> */}
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
+              <Scatter  
+                name="Teams"
+                xAxisId="x-axis"
+                yAxisId="y-axis"
+                data={chartData} 
+                shape={renderShape} 
+                //dataKey="y"
+                //fill="#8884d8"
+              />
+              {/*<Scatter 
+                xAxisId="x-axis"
+                yAxisId="y-axis"
+                name="Teams" 
+                data={chartData} 
+                datakey="y"
+                fill="transparent"
+                style={{ cursor: 'pointer' }}
+              />*/}
+              {/* LAYER 2: Transparent functional node layer overlaid cleanly on top to capture hovers natively
+              <Scatter data={chartData} shape={<RenderTransparentScatterDot />} /> */}
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+        </div>
     </div>
   );
 }
@@ -867,7 +869,7 @@ function TeamPerformanceCards({ teamTable }) {
       </h2>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
         gap: '16px',
         padding: '0 8px'
       }}>
@@ -884,14 +886,14 @@ function TeamPerformanceCards({ teamTable }) {
               borderRadius: '12px',
               border: '1px solid #e2e8f0',
               boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-              padding: '16px',
+              padding: '12px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
             }}>
               {/* Team Name + GB Badge */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '1rem', color: '#2c3e50' }}>{row.name}</span>
+                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#2c3e50' }}>{row.name}</span>
                 <span style={{
                   backgroundColor: gb > 0 ? '#d1fae5' : gb < 0 ? '#fee2e2' : '#f1f5f9',
                   color: gb > 0 ? '#065f46' : gb < 0 ? '#991b1b' : '#475569',
@@ -905,7 +907,7 @@ function TeamPerformanceCards({ teamTable }) {
               </div>
 
               {/* Actual vs System Record */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <div style={{
                   flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
                   borderRadius: '8px', padding: '6px'
@@ -924,9 +926,9 @@ function TeamPerformanceCards({ teamTable }) {
 
               {/* Matched/Mismatched Bar */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', marginBottom: '4px' }}>
-                  <span>✅ Matched: {row.matched}</span>
-                  <span>❌ Mismatched: {row.mismatched}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', color: '#64748b', marginBottom: '4px' }}>
+                  <span>✅: {row.matched}</span>
+                  <span>❌: {row.mismatched}</span>
                 </div>
                 <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#fee2e2', overflow: 'hidden' }}>
                   <div style={{
