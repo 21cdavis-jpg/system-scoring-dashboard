@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import './App.css';
 import { 
@@ -619,13 +619,51 @@ export const getChartColors = (homeName, awayName) => {
 // SUB-COMPONENT: TEAM PERFORMANCE VS SYSTEM SCATTERPLOT
 // ==========================================
 
+  // Custom Data Point Component: Renders the team logo inside an SVG image boundary
+const CustomLogoNode = (props) => {
+  const { cx, cy, payload, onShowTooltip, onHideTooltip } = props;
+  if (cx === undefined || cy === undefined || isNaN(cx) || isNaN(cy)) return null;
+
+  const logoSrc = `/MEC Logos/${payload.teamName}.png`;
+  const size = 32;
+
+  return (
+    <g transform={`translate(${cx - size / 2}, ${cy - size / 2})`}>
+      <image
+        href={logoSrc}
+        width={size}
+        height={size}
+        onError={(e) => { e.target.style.display = 'none'; }}
+      />
+      {/* Rect on top captures mouse events reliably */}
+      <rect
+        x={0}
+        y={0}
+        width={size}
+        height={size}
+        fill="transparent"
+        style={{ cursor: 'pointer' }}
+        onMouseEnter={(e) => {
+          const rect = e.target.getBoundingClientRect();
+          onShowTooltip({
+            screenX: rect.left + rect.width / 2,
+            screenY: rect.top,
+            data: payload
+          });
+        }}
+        onMouseLeave={onHideTooltip}
+      />
+    </g>
+  );
+};
 
 // ==========================================
 // SUB-COMPONENT: TEAM PERFORMANCE VS SYSTEM SCATTERPLOT
 // ==========================================
 function TeamPerformanceScatterPlot({ systemData }) {
   const [metric, setMetric] = useState('PPS'); // 'PPS' or 'PPP'
-
+  const [hoveredTeam, setHoveredTeam] = useState(null);
+  const [tooltip, setTooltip] = useState(null);
   // Transform system performance data rows for the scatter plot
   const chartData = useMemo(() => {
     if (!systemData || !Array.isArray(systemData)) return [];
@@ -634,7 +672,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
       // Direct exact match to your index.js backend object fields
       const expectedPPS = parseFloat(row.expectedPPS || 0);
       const actualPPS = parseFloat(row.actualPPS || 0);
-      const expectedPPP = parseFloat(row.expectedPPS || 0);
+      const expectedPPP = parseFloat(row.expectedPPP || 0);
       const actualPPP = parseFloat(row.actualPPP || 0);
       const teamLabel = row.name;
 
@@ -659,30 +697,19 @@ function TeamPerformanceScatterPlot({ systemData }) {
     };
   }, [chartData]);
 
-  // Custom Data Point Component: Renders the team logo inside an SVG image boundary
-  const CustomLogoNode = (props) => {
-    const { cx, cy, payload } = props;
+  {/*const RenderTransparentScatterDot = (props) => {
+    const { cx, cy } = props;
     if (cx === undefined || cy === undefined || isNaN(cx) || isNaN(cy)) return null;
-    
-    const logoSrc = `/MEC Logos/${payload.teamName}.png`;
-    const size = 32; // Square dimensions for team logos
+    return <circle cx={cx} cy={cy} r={16} fill="transparent" style={{ cursor: 'pointer' }} />;
+  };*/}
 
-    return (
-      <g transform={`translate(${cx - size / 2}, ${cy - size / 2})`}>
-        <image
-          href={logoSrc}
-          width={size}
-          height={size}
-          onError={(e) => {
-            // Invisible placeholder fallback if image path fails to resolve
-            e.target.style.display = 'none';
-          }}
-        />
-        <circle cx={size / 2} cy={size / 2} r={size / 2} fill="transparent" stroke="rgba(0,0,0,0.05)" strokeWidth={1} />
-      </g>
-    );
-  };
-
+  const renderShape = useCallback((props) => (
+    <CustomLogoNode
+      {...props}
+      onShowTooltip={setTooltip}
+      onHideTooltip={() => setTooltip(null)}
+    />
+  ), []);
   return (
     <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', maxWidth: '1000px', margin: '25px auto' }}>
       
@@ -706,6 +733,37 @@ function TeamPerformanceScatterPlot({ systemData }) {
         </div>
       </div>
 
+      {/* FLOATING TOOLTIP — rendered in a portal at screen coordinates */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed',
+          left: tooltip.screenX,
+          top: tooltip.screenY - 10,
+          transform: 'translate(-50%, -100%)',
+          backgroundColor: '#1e293b',
+          color: 'white',
+          padding: '10px 14px',
+          borderRadius: '6px',
+          fontSize: '0.85rem',
+          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
+          pointerEvents: 'none',
+          zIndex: 9999,
+        }}>
+          <strong style={{ display: 'block', borderBottom: '1px solid #475569', paddingBottom: '4px', marginBottom: '6px', fontSize: '0.9rem' }}>
+            {tooltip.data.teamName}
+          </strong>
+          <div>Expected {metric}: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{tooltip.data.x.toFixed(2)}</span></div>
+          <div>Actual {metric}: <span style={{ color: '#34d399', fontWeight: 'bold' }}>{tooltip.data.y.toFixed(2)}</span></div>
+          <div style={{ marginTop: '4px', borderTop: '1px dashed #475569', paddingTop: '4px', fontSize: '0.75rem', color: '#cbd5e0' }}>
+            Differential: <span style={{ fontWeight: 'bold', color: (tooltip.data.y - tooltip.data.x) >= 0 ? '#34d399' : '#f87171' }}>
+              {(tooltip.data.y - tooltip.data.x) >= 0 
+                ? `+${(tooltip.data.y - tooltip.data.x).toFixed(2)}` 
+                : (tooltip.data.y - tooltip.data.x).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* SCATTER PLOT CHART */}
       <div style={{ height: '480px', width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -713,6 +771,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
             
             <XAxis 
+              xAxisId="x-axis"
               type="number" 
               dataKey="x" 
               name={`Expected ${metric}`} 
@@ -723,6 +782,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
             />
             
             <YAxis 
+              yAxisId="y-axis"
               type="number" 
               dataKey="y" 
               name={`Actual ${metric}`} 
@@ -732,11 +792,17 @@ function TeamPerformanceScatterPlot({ systemData }) {
               label={{ value: `Actual Executed ${metric}`, angle: -90, position: 'insideLeft', offset: -5, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
             />
 
-            <ZAxis range={[100, 100]} />
+            <ZAxis range={[32, 32]} />
 
-            <Tooltip 
+            {/*<Tooltip 
               cursor={{ strokeDasharray: '3 3', stroke: '#a0aec0' }}
+              trigger="hover"
+              shared={false}
               content={({ active, payload }) => {
+                console.log("Tooltip Core Check -> Active:", active, "Payload Length:", payload?.length);
+                if (payload && payload.length > 0) {
+                  console.log("Payload Content:", payload[0].payload);
+                }
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   const diff = data.y - data.x;
@@ -753,21 +819,39 @@ function TeamPerformanceScatterPlot({ systemData }) {
                 }
                 return null;
               }}
-            />
-            
+            />*/}
+
             {/* Diagonal Identity Line (Y = X) */}
             <ReferenceLine 
+              xAxisId="x-axis"
+              yAxisId="y-axis"
+              ifOverflow='extendDomain'
               segment={[{ x: Math.min(domains.minX, domains.minY), y: Math.min(domains.minX, domains.minY) }, { x: Math.max(domains.maxX, domains.maxY), y: Math.max(domains.maxX, domains.maxY) }]} 
-              stroke="#cbd5e0" 
+              stroke="#ff0000" 
               strokeWidth={2}
               strokeDasharray="4 4"
             />
 
-            <Scatter 
+            <Scatter  
+              name="Teams"
+              xAxisId="x-axis"
+              yAxisId="y-axis"
+              data={chartData} 
+              shape={renderShape} 
+              //dataKey="y"
+              //fill="#8884d8"
+            />
+            {/*<Scatter 
+              xAxisId="x-axis"
+              yAxisId="y-axis"
               name="Teams" 
               data={chartData} 
-              shape={<CustomLogoNode />} 
-            />
+              datakey="y"
+              fill="transparent"
+              style={{ cursor: 'pointer' }}
+            />*/}
+            {/* LAYER 2: Transparent functional node layer overlaid cleanly on top to capture hovers natively
+            <Scatter data={chartData} shape={<RenderTransparentScatterDot />} /> */}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -775,6 +859,188 @@ function TeamPerformanceScatterPlot({ systemData }) {
   );
 }
 
+function TeamPerformanceCards({ teamTable }) {
+  return (
+    <div style={{ marginTop: '40px' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#2c3e50' }}>
+        Team Performance vs. System
+      </h2>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '16px',
+        padding: '0 8px'
+      }}>
+        {teamTable.map((row, idx) => {
+          const total = row.matched + row.mismatched;
+          const matchPct = total > 0 ? (row.matched / total) * 100 : 0;
+          const ppsDiff = parseFloat(row.ppsDiff);
+          const pppDiff = parseFloat(row.pppDiff);
+          const gb = parseFloat(row.gb);
+
+          return (
+            <div key={idx} style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              {/* Team Name + GB Badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '1rem', color: '#2c3e50' }}>{row.name}</span>
+                <span style={{
+                  backgroundColor: gb > 0 ? '#d1fae5' : gb < 0 ? '#fee2e2' : '#f1f5f9',
+                  color: gb > 0 ? '#065f46' : gb < 0 ? '#991b1b' : '#475569',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold'
+                }}>
+                  {gb > 0 ? `+${gb}` : gb} GB
+                </span>
+              </div>
+
+              {/* Actual vs System Record */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{
+                  flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
+                  borderRadius: '8px', padding: '6px'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>Actual</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2c3e50' }}>{row.record}</div>
+                </div>
+                <div style={{
+                  flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
+                  borderRadius: '8px', padding: '6px'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>System</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#64748b' }}>{row.sysRecord}</div>
+                </div>
+              </div>
+
+              {/* Matched/Mismatched Bar */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', marginBottom: '4px' }}>
+                  <span>✅ Matched: {row.matched}</span>
+                  <span>❌ Mismatched: {row.mismatched}</span>
+                </div>
+                <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#fee2e2', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${matchPct}%`,
+                    height: '100%',
+                    backgroundColor: '#10b981',
+                    borderRadius: '999px',
+                    transition: 'width 0.4s ease'
+                  }} />
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px' }}>
+                  {matchPct.toFixed(0)}% match rate
+                </div>
+              </div>
+
+              {/* PPS / PPP Diffs */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[['PPS', ppsDiff], ['PPP', pppDiff]].map(([label, diff]) => (
+                  <div key={label} style={{
+                    flex: 1, textAlign: 'center', borderRadius: '8px', padding: '6px',
+                    backgroundColor: diff >= 0 ? '#d1fae5' : '#fee2e2'
+                  }}>
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 'bold' }}>{label} Diff</div>
+                    <div style={{ fontWeight: 'bold', color: diff >= 0 ? '#065f46' : '#991b1b', fontSize: '0.9rem' }}>
+                      {diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TeamLollipopChart({ teamTable }) {
+  const maxGames = Math.max(...teamTable.map(t => {
+    const [w, l] = t.record.split('-').map(Number);
+    return w + l;
+  }));
+
+  return (
+    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', maxWidth: '1000px', margin: '25px auto' }}>
+      
+      {/* Header + Legend */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '1.25rem', fontWeight: 'bold' }}>Actual vs System Win Record</h3>
+          <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#718096' }}>Dot = actual wins · Dashed tick = system projection · Bar = match rate</p>
+        </div>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {[['#1D9E75', 'Actual wins'], ['#888780', 'System projection']].map(([color, label]) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#718096' }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Rows */}
+      {teamTable.map((row, idx) => {
+        const [actualW] = row.record.split('-').map(Number);
+        const [sysW] = row.sysRecord.split('-').map(Number);
+        const total = teamTable[0].matched + teamTable[0].mismatched; // adjust if per-row
+        const matchRate = Math.round((row.matched / (row.matched + row.mismatched)) * 100);
+        const gb = parseFloat(row.gb);
+        const actualPct = (actualW / maxGames) * 100;
+        const sysPct = (sysW / maxGames) * 100;
+        const gbLabel = gb === 0 ? '±0' : gb > 0 ? `+${gb}` : `${gb}`;
+        const ahead = actualW >= sysW;
+
+        return (
+          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 90px', alignItems: 'center', gap: '12px', padding: '7px 0', borderBottom: idx < teamTable.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+            
+            {/* Team name */}
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#2c3e50', textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {row.name}
+            </div>
+
+            {/* SVG lollipop */}
+            <div style={{ position: 'relative', height: '28px' }}>
+              <svg width="100%" height="28" viewBox="0 0 400 28" preserveAspectRatio="none" aria-hidden="true">
+                {/* Connector line */}
+                <line x1={Math.min(actualPct, sysPct) * 4} y1="11" x2={Math.max(actualPct, sysPct) * 4} y2="11"
+                  stroke={ahead ? '#1D9E75' : '#E24B4A'} strokeWidth="1.5" opacity="0.35" />
+                {/* System dashed tick */}
+                <line x1={sysPct * 4} y1="4" x2={sysPct * 4} y2="18"
+                  stroke="#888780" strokeWidth="2" strokeDasharray="3 2" />
+                {/* Actual dot */}
+                <circle cx={actualPct * 4} cy="11" r="5" fill="#1D9E75" />
+                {/* Match rate bar */}
+                <rect x="0" y="22" width={matchRate * 4} height="4" rx="2" fill="#1D9E75" opacity="0.7" />
+                <rect x={matchRate * 4} y="22" width={(100 - matchRate) * 4} height="4" rx="2" fill="#E24B4A" opacity="0.5" />
+              </svg>
+            </div>
+
+            {/* Meta: GB badge + match % */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+              <span style={{
+                fontSize: '11px', fontWeight: 'bold', padding: '1px 6px', borderRadius: '999px',
+                background: gb > 0 ? '#d1fae5' : gb < 0 ? '#fee2e2' : '#f1f5f9',
+                color: gb > 0 ? '#065f46' : gb < 0 ? '#991b1b' : '#475569'
+              }}>{gbLabel} W</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>{matchRate}% match</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 // ==========================================
 // MAIN APP COMPONENT EXPORT
 // ==========================================
@@ -1609,6 +1875,10 @@ function App() {
             {/* SCATTER PLOT INJECTED HERE AT THE TOP OF THE SYSTEM VIEW */}
             <TeamPerformanceScatterPlot systemData={systemStats.teamTable} />
 
+            <TeamPerformanceCards teamTable={systemStats.teamTable} />
+
+            <TeamLollipopChart teamTable={systemStats.teamTable} />
+            
             <div style={{ marginTop: '40px', width: '100%', textAlign: 'left' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Team Performance vs. System</h2>
               <div style={{ overflowX: 'auto', width: '100%' }}>
