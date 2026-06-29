@@ -870,7 +870,7 @@ function TeamPerformanceCards({ teamTable }) {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-        gap: '16px',
+        gap: '8px',
         padding: '0 8px'
       }}>
         {teamTable.map((row, idx) => {
@@ -893,7 +893,7 @@ function TeamPerformanceCards({ teamTable }) {
             }}>
               {/* Team Name + GB Badge */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#2c3e50' }}>{row.name}</span>
+                <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#2c3e50' }}>{row.name}</span>
                 <span style={{
                   backgroundColor: gb > 0 ? '#d1fae5' : gb < 0 ? '#fee2e2' : '#f1f5f9',
                   color: gb > 0 ? '#065f46' : gb < 0 ? '#991b1b' : '#475569',
