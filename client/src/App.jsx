@@ -906,21 +906,24 @@ function TeamPerformanceCards({ teamTable }) {
                 </span>
               </div>
 
-              {/* Actual vs System Record */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <div style={{
-                  flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
-                  borderRadius: '8px', padding: '6px'
-                }}>
-                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>Actual</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2c3e50' }}>{row.record}</div>
-                </div>
-                <div style={{
-                  flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
-                  borderRadius: '8px', padding: '6px'
-                }}>
-                  <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>System</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#64748b' }}>{row.sysRecord}</div>
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>Record</div>
+                {/* Actual vs System Record */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{
+                    flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
+                    borderRadius: '8px', padding: '6px'
+                  }}>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>Actual</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2c3e50' }}>{row.record}</div>
+                  </div>
+                  <div style={{
+                    flex: 1, textAlign: 'center', backgroundColor: '#f8fafc',
+                    borderRadius: '8px', padding: '6px'
+                  }}>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>System</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#64748b' }}>{row.sysRecord}</div>
+                  </div>
                 </div>
               </div>
 
@@ -1043,6 +1046,224 @@ function TeamLollipopChart({ teamTable }) {
     </div>
   );
 }
+
+// Helper component for section headers
+// ==========================================
+// SUB-COMPONENT: REWRITTEN TEAM PROFILE DASHBOARD (TEAM TAB)
+// ==========================================
+// ==========================================
+// SUB-COMPONENT: REWRITTEN TEAM PROFILE DASHBOARD (TEAM TAB)
+// ==========================================
+function SectionHeader({ title }) {
+  return (
+    <div style={{
+      backgroundColor: '#2c3e50',
+      color: 'white',
+      padding: '8px 15px',
+      fontWeight: 'bold',
+      fontSize: '0.95rem',
+      letterSpacing: '0.5px',
+      textTransform: 'uppercase',
+      marginTop: '20px',
+      borderRadius: '4px',
+      textAlign: 'left'
+    }}>
+      {title}
+    </div>
+  );
+}
+
+function MetricRow({ label, offValue, defValue, isHighlighted = false, decimals = 1 }) {
+  const formatVal = (val, isPct = false) => {
+    if (val === undefined || val === null) return '0.0';
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    if (isPct) return `${num.toFixed(1)}%`;
+    return num.toFixed(decimals);
+  };
+
+  const isOreb = label === "OREB%";
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 180px 1fr',
+      alignItems: 'center',
+      padding: '10px 15px',
+      borderBottom: '1px solid #e2e8f0',
+      backgroundColor: isHighlighted ? '#f8fafc' : 'transparent',
+      fontWeight: isHighlighted ? '600' : 'normal'
+    }}>
+      <div style={{ 
+        textAlign: 'right', 
+        fontSize: '1.05rem', 
+        fontFamily: 'monospace', 
+        paddingRight: '30px',
+        color: '#2c3e50'
+      }}>
+        {formatVal(offValue, isOreb)}
+      </div>
+
+      <div style={{
+        textAlign: 'center',
+        fontSize: '0.85rem',
+        fontWeight: 'bold',
+        color: '#64748b',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
+      }}>
+        {label}
+      </div>
+
+      <div style={{ 
+        textAlign: 'left', 
+        fontSize: '1.05rem', 
+        fontFamily: 'monospace', 
+        paddingLeft: '30px',
+        color: '#2c3e50'
+      }}>
+        {formatVal(defValue, isOreb)}
+      </div>
+    </div>
+  );
+}
+
+function TeamProfileDashboard({ teamData, systemRecord = "0-0" }) {
+  if (!teamData) return null;
+
+  const name = teamData.teamName || "Selected Team";
+  const actualRec = teamData.record || "0-0";
+  const logoSrc = `/MEC Logos/${name}.png`;
+
+  const off = teamData.off || {};
+  const def = teamData.def || {};
+
+  const offSystemScore = off.sysG;
+  const defSystemScore = def.sysG;
+  
+  // Adjusted properties to pull correctly from .ptsG
+  const offPPG = off.ptsG || 0; 
+  const defPPG = def.ptsG || 0; 
+  
+  const offPossessions = off.possG;
+  const defPossessions = def.possG;
+  const margin = teamData.shot_margin || 0;
+
+  const offShotsGained = teamData.shotsGained100 || 0;
+  const defShotsGained = teamData.shotsGained100d || 0;
+  const offOreb = off.oRebPct;
+  const defOreb = def.oRebPct;
+  const offFtReb = off.ftRebG;
+  const defFtReb = def.ftRebG;
+
+  const offShotQual = off.shot_q;
+  const defShotQual = def.shot_q;
+  const offStintQual = off.stint_q;
+  const defStintQual = def.stint_q;
+  const offResultQual = off.result_q;
+  const defResultQual = def.result_q;
+
+  const getExpectedPPS = (sq) => {
+    const num = parseFloat(sq);
+    return isNaN(num) ? 0 : num / 4;
+  };
+
+  return (
+    <div style={{
+      width: '100%',
+      maxWidth: '850px',
+      margin: '20px auto',
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      border: '1px solid #ddd',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      overflow: 'hidden'
+    }}>
+      {/* 1. Top Executive Banner */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '20px 30px',
+        backgroundColor: '#f8fafc',
+        borderBottom: '2px solid #e2e8f0',
+        flexWrap: 'wrap',
+        gap: '15px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <img 
+            src={logoSrc} 
+            alt={`${name} Logo`} 
+            style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          <h2 style={{ margin: 0, fontSize: '1.8rem', color: '#2c3e50', fontWeight: '800' }}>
+            {name}
+          </h2>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>
+            Team Records
+          </span>
+          <div style={{ fontSize: '1.15rem', color: '#2c3e50', fontWeight: '700', marginTop: '2px' }}>
+            Actual Record: <span style={{ color: '#16a085' }}>{actualRec}</span>
+            <span style={{ margin: '0 10px', color: '#cbd5e0' }}>|</span>
+            System Record: <span style={{ color: '#2980b9' }}>{systemRecord}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Column Section Headers */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 180px 1fr',
+        padding: '15px 15px 5px 15px',
+        fontWeight: 'bold',
+        fontSize: '1.1rem',
+        color: '#1e293b'
+      }}>
+        <div style={{ textAlign: 'center', borderBottom: '3px solid #1abc9c', paddingBottom: '6px', margin: '0 15px' }}>
+          ⚔️ OFFENSE
+        </div>
+        <div></div>
+        <div style={{ textAlign: 'center', borderBottom: '3px solid #e74c3c', paddingBottom: '6px', margin: '0 15px' }}>
+          🛡️ DEFENSE
+        </div>
+      </div>
+
+      {/* 2. Metrics Presentation Matrix Container */}
+      <div style={{ padding: '10px 20px 25px 20px' }}>
+        
+        {/* "Overall" Section */}
+        <SectionHeader title="Overall" />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <MetricRow label="System Score" offValue={offSystemScore} defValue={defSystemScore} isHighlighted={true} decimals={1} />
+          <MetricRow label="PPG" offValue={offPPG} defValue={defPPG} decimals={1} />
+          <MetricRow label="Possessions" offValue={offPossessions} defValue={defPossessions} decimals={1} />
+          <MetricRow label="Shot Margin" offValue={margin} defValue={margin} decimals={1} />
+        </div>
+
+        {/* "More" Section */}
+        <SectionHeader title="More" />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <MetricRow label="Shots Gained/100" offValue={offShotsGained} defValue={defShotsGained} decimals={1} />
+          <MetricRow label="OREB%" offValue={offOreb} defValue={defOreb} />
+          <MetricRow label="FT Reb" offValue={offFtReb} defValue={defFtReb} decimals={1} />
+        </div>
+
+        {/* "Better" Section */}
+        <SectionHeader title="Better" />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <MetricRow label="Shot Quality" offValue={offShotQual} defValue={defShotQual} isHighlighted={true} decimals={2} />
+          <MetricRow label="Expected PPS" offValue={getExpectedPPS(offShotQual)} defValue={getExpectedPPS(defShotQual)} decimals={2} />
+          <MetricRow label="Stint Quality" offValue={offStintQual} defValue={defStintQual} decimals={2} />
+          <MetricRow label="Result Quality" offValue={offResultQual} defValue={defResultQual} decimals={2} />
+        </div>
+
+      </div>
+    </div>
+  );
+}
 // ==========================================
 // MAIN APP COMPONENT EXPORT
 // ==========================================
@@ -1122,7 +1343,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'System' && !systemStats) {
+    if ((activeTab === 'System' || activeTab === 'Team') && !systemStats) {
       axios.get(`${API_BASE_URL}/api/system-accuracy`)
         .then(res => setSystemStats(res.data))
         .catch(err => console.error("System Tab Error:", err)); 
@@ -1637,6 +1858,9 @@ function App() {
             
             {selectedTeamStats && (
               <>
+              
+                <TeamProfileDashboard teamData={selectedTeamStats} systemRecord={selectedTeamStats.sysRecord || "0-0"} />
+                
                 <div style={{ marginTop: '20px', textAlign: 'left' }}>
                   <h3 style = {{textAlign: 'center'}}>{selectedTeamStats.teamName} ({selectedTeamStats.record})</h3>
                   <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>

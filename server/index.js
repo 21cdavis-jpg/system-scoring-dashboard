@@ -47,10 +47,11 @@ const parseSequence = (seq) => {
 const calculateMetrics = (rows, gamesPlayed) => {
     let stats = { 
         system: 0, shots: 0, totalQual: 0, stintQual: 0, poss: 0, 
-        turnovers: 0, oRebs: 0, ftReb: 0, missedShots: 0 
+        turnovers: 0, oRebs: 0, ftReb: 0, missedShots: 0, totalPoints: 0 
     };
     
     rows.forEach(row => {
+        stats.totalPoints += (row.points || 0);
         const p = parseSequence(row.system_sequence);
         if (p) {
             stats.poss++;
@@ -79,6 +80,7 @@ const calculateMetrics = (rows, gamesPlayed) => {
     return {
         ...stats,
         sysG: gamesPlayed > 0 ? (stats.system / gamesPlayed).toFixed(1) : "0.0",
+        ptsG: gamesPlayed > 0 ? (stats.totalPoints / gamesPlayed).toFixed(1) : "0.0",
         possG: gamesPlayed > 0 ? (stats.poss / gamesPlayed).toFixed(1) : "0.0",
         ftRebG: gamesPlayed > 0 ? (stats.ftReb / gamesPlayed).toFixed(1) : "0.0",
         oRebPct: stats.missedShots > 0 ? ((stats.oRebs / stats.missedShots) * 100).toFixed(1) + '%' : "0.0%",
@@ -102,7 +104,6 @@ app.get('/api/games/:id/plays', (req, res) => {
     });
 });
 
-// NEW STATS ROUTE (Make sure the OLD one is deleted)
 app.get('/api/stats/:teamName', (req, res) => {
     const team = req.params.teamName;
     const sql = `
@@ -119,6 +120,7 @@ app.get('/api/stats/:teamName', (req, res) => {
         const gamesPlayed = gameIds.length;
         let wins = 0;
         let losses = 0;
+        let sysWins = 0, sysLosses = 0;
 
         // --- SURGICAL ADDITION START: Build Schedule Log Array ---
         const schedule = gameIds.map(id => {
@@ -205,6 +207,24 @@ app.get('/api/stats/:teamName', (req, res) => {
                 if (game.away_score > game.home_score) wins++;
                 else losses++;
             }
+
+            // Mirror system-accuracy: accumulate by Home/Away position, then compare
+            let homeSys = 0, awaySys = 0;
+            const thisGameRows = rows.filter(r => r.game_id === id);
+            thisGameRows.forEach(row => {
+                if (!row.system_sequence || row.system_sequence.trim() === "") return;
+                const p = parseSequence(row.system_sequence);
+                if (!p) return;
+                const score = p.lastQuality + p.rebounds;
+                if (row.team_type === 'Home') homeSys += score;
+                else awaySys += score;
+            });
+
+            const isHome = game.home_team === team;
+            const teamSys = isHome ? homeSys : awaySys;
+            const oppSys  = isHome ? awaySys : homeSys;
+            if (teamSys > oppSys) sysWins++;
+            else if (oppSys > teamSys) sysLosses++;
         });
 
         const offRows = rows.filter(r => (r.team_type === 'Home' && r.home_team === team) || (r.team_type === 'Away' && r.away_team === team));
@@ -238,6 +258,7 @@ app.get('/api/stats/:teamName', (req, res) => {
         res.json({
             teamName: team,
             record: `${wins}-${losses}`,
+            sysRecord: `${sysWins}-${sysLosses}`,
             off, 
             def,
             schedule, // Spliced cleanly into your existing payload object
