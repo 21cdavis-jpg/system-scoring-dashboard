@@ -1361,18 +1361,35 @@ const SHOT_KEYS   = ['7/11', 6, 4, 3, 1, 0];
 const EXPECTED_PPS = { '7/11': 1.75, 6: 1.50, 4: 1.00, 3: 0.75, 1: 0.25, 0: 0.00 };
 const SHOT_COLORS  = { '7/11': '#7F77DD', 6: '#1D9E75', 4: '#378ADD', 3: '#BA7517', 1: '#D85A30', 0: '#888780' };
 
+// Stack order (bottom -> top) as requested: High = 6, 4, 7/11 | Low = 3, 0, 1
+const HIGH_STACK_ORDER = [6, 4, '7/11'];
+const LOW_STACK_ORDER  = [3, 0, 1];
+
 function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist }) {
   if (!shotDistribution || !shotPpsLog) return null;
 
-  // --- Stacked bar data ---
-  // One object per group (Offense, League Avg, Defense), each key is a shot type %.
   const parsePct = (pctStr) => parseFloat(pctStr) || 0;
 
-  const stackedData = [
-    { name: 'Offense',    ...Object.fromEntries(shotDistribution.offense.map(d => [String(d.type), parsePct(d.pct)])) },
-    { name: 'League Avg', ...Object.fromEntries((leagueAvgDist || []).map(d => [String(d.type), d.pct])) },
-    { name: 'Defense',    ...Object.fromEntries(shotDistribution.defense.map(d => [String(d.type), parsePct(d.pct)])) },
-  ];
+  // Build a lookup of type -> pct for a given distribution array
+  const toPctMap = (distArray, isLeagueAvg = false) =>
+    Object.fromEntries(
+      (distArray || []).map(d => [String(d.type), isLeagueAvg ? d.pct : parsePct(d.pct)])
+    );
+
+  const offensePctMap = toPctMap(shotDistribution.offense);
+  const leaguePctMap  = toPctMap(leagueAvgDist, true);
+  const defensePctMap = toPctMap(shotDistribution.defense);
+
+  // Build the 3-row (Offense / League Average / Defense) dataset for a single quality tier's mini chart.
+  // Only includes keys relevant to that tier, so tooltips don't show the other tier's 0% entries.
+  const buildTierData = (qualityKeys) => ([
+    { name: 'Offense',        ...Object.fromEntries(qualityKeys.map(k => [String(k), offensePctMap[String(k)] ?? 0])) },
+    { name: 'League Average', ...Object.fromEntries(qualityKeys.map(k => [String(k), leaguePctMap[String(k)] ?? 0])) },
+    { name: 'Defense',        ...Object.fromEntries(qualityKeys.map(k => [String(k), defensePctMap[String(k)] ?? 0])) },
+  ]);
+
+  const highQualityData = buildTierData(HIGH_STACK_ORDER);
+  const lowQualityData  = buildTierData(LOW_STACK_ORDER);
 
   // --- Diverging chart data: actual PPS minus expected ---
   const makeDeltaData = (distSide) => distSide.map(d => {
@@ -1387,6 +1404,49 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
 
   const barStyle = { fontSize: '12px', fill: '#2c3e50' };
   const axisStyle = { fontSize: '11px', fill: '#7f8c8d' };
+
+  // Custom tooltip: shows Total (%) above the individual shot-type breakdown
+  const TierTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const total = payload.reduce((sum, p) => sum + (p.value || 0), 0);
+    return (
+      <div style={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #ddd', background: '#fff', padding: '8px 10px' }}>
+        <div style={{ fontWeight: '600', color: '#2c3e50', marginBottom: '4px' }}>{label}</div>
+        <div style={{ fontWeight: '700', color: '#1a2332', marginBottom: '4px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+          Total: {total.toFixed(1)}%
+        </div>
+        {payload.map((p, i) => (
+          <div key={i} style={{ color: '#2c3e50' }}>
+            <span style={{ display: 'inline-block', width: '9px', height: '9px', borderRadius: '2px', background: p.color, marginRight: '5px' }} />
+            {p.name === '7/11' ? "7/11's" : `${p.name}'s`}: {p.value.toFixed(1)}%
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const GroupBarChart = ({ data, title, stackOrder, showYAxis }) => (
+    <div style={{ flex: 1 }}>
+      <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#2c3e50', marginBottom: '6px' }}>{title}</div>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={data} margin={{ top: 5, right: 5, left: showYAxis ? 0 : -20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
+          <XAxis dataKey="name" tick={barStyle} axisLine={false} tickLine={false} />
+          <YAxis
+            domain={[0, 100]}
+            tick={showYAxis ? axisStyle : false}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={v => `${v}%`}
+          />
+          <Tooltip content={<TierTooltip />} />
+          {stackOrder.map(k => (
+            <Bar key={k} dataKey={String(k)} stackId="a" fill={SHOT_COLORS[k]} name={String(k)} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
 
   const DivergingChart = ({ data, title }) => (
     <div style={{ flex: 1 }}>
@@ -1413,34 +1473,47 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
 
   return (
     <div style={{ marginTop: '40px' }}>
-      <h3 style={{ marginBottom: '8px' }}>Team Shot Type Breakdown</h3>
+      <h3 style={{
+        marginBottom: '2px',
+        fontSize: '19px',
+        fontWeight: '700',
+        color: '#1a2332',
+        letterSpacing: '0.2px',
+      }}>
+        Team Shot Type Breakdown
+      </h3>
+      <div style={{ height: '3px', width: '48px', background: '#378ADD', borderRadius: '2px', marginBottom: '16px' }} />
 
-      {/* Legend */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-        {SHOT_KEYS.map((k, i) => (
-          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#2c3e50' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
-            {SHOT_LABELS[i]}
-          </span>
-        ))}
+      {/* Stacked distribution: one mini chart per quality tier, Offense/League Avg/Defense bars */}
+      <div style={{ marginBottom: '8px', fontSize: '15px', color: '#1a2332', textAlign: 'center', fontWeight: '700' }}>
+        Shot Distribution (%)
+      </div>
+      <div style={{ display: 'flex', gap: '16px' }}>
+        <GroupBarChart data={highQualityData} title="High Quality" stackOrder={HIGH_STACK_ORDER} showYAxis={true} />
+        <GroupBarChart data={lowQualityData} title="Low Quality" stackOrder={LOW_STACK_ORDER} showYAxis={true} />
       </div>
 
-      {/* Stacked distribution bars */}
-      <div style={{ marginBottom: '4px', fontSize: '12px', color: '#7f8c8d', textAlign: 'center' }}>Shot Distribution (%)</div>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={stackedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
-          <XAxis dataKey="name" tick={barStyle} axisLine={false} tickLine={false} />
-          <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-          <Tooltip
-            formatter={(val, name) => [`${val.toFixed(1)}%`, `${name}'s`]}
-            contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #ddd' }}
-          />
-          {SHOT_KEYS.map(k => (
-            <Bar key={k} dataKey={String(k)} stackId="a" fill={SHOT_COLORS[k]} name={k === '7/11' ? '7/11' : String(k)} />
+      {/* Legend, grouped by quality tier, at the bottom */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}>High Quality:</span>
+          {HIGH_STACK_ORDER.map(k => (
+            <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
+              <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
+              {k === '7/11' ? "7/11's" : `${k}'s`}
+            </span>
           ))}
-        </BarChart>
-      </ResponsiveContainer>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}>Low Quality:</span>
+          {LOW_STACK_ORDER.map(k => (
+            <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
+              <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
+              {k}'s
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Diverging PPS delta charts */}
       <div style={{ marginTop: '28px', marginBottom: '4px', fontSize: '12px', color: '#7f8c8d', textAlign: 'center' }}>
@@ -1457,6 +1530,8 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
     </div>
   );
 }
+
+
 
 function TeamProfileDashboard({ teamData, systemRecord = "0-0" }) {
   if (!teamData) return null;
