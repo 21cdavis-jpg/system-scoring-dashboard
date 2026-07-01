@@ -83,6 +83,7 @@ const calculateMetrics = (rows, gamesPlayed) => {
         ptsG: gamesPlayed > 0 ? (stats.totalPoints / gamesPlayed).toFixed(1) : "0.0",
         possG: gamesPlayed > 0 ? (stats.poss / gamesPlayed).toFixed(1) : "0.0",
         ftRebG: gamesPlayed > 0 ? (stats.ftReb / gamesPlayed).toFixed(1) : "0.0",
+        //oRebPct: stats.missedShots > 0 ? (stats.oRebs).toFixed(1) : "0.0",
         oRebPct: stats.missedShots > 0 ? ((stats.oRebs / stats.missedShots) * 100).toFixed(1) + '%' : "0.0%",
         shot_q: stats.shots > 0 ? (stats.totalQual / stats.shots).toFixed(2) : "0.00",
         stint_q: stats.poss > 0 ? (stats.stintQual / stats.poss).toFixed(2) : "0.00",
@@ -114,7 +115,7 @@ app.get('/api/stats/:teamName', (req, res) => {
 
     db.all(sql, [team, team], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
-        if (!rows || rows.length === 0) return res.json({ teamName: team, record: "0-0", schedule: [], shotDistribution: { offense: [], defense: [] } });
+        if (!rows || rows.length === 0) return res.json({ teamName: team, record: "0-0", schedule: [], shotDistribution: { offense: [], defense: [] }, shotPpsLog: { offense: [], defense: [] } });
 
         const gameIds = [...new Set(rows.map(r => r.game_id))];
         const gamesPlayed = gameIds.length;
@@ -135,6 +136,9 @@ app.get('/api/stats/:teamName', (req, res) => {
 
             const sCounts = { offense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 }, defense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 } };
             const sTotals = { offense: { system: 0, shots: 0, sQual: 0, poss: 0 }, defense: { system: 0, shots: 0, sQual: 0, poss: 0 } };
+            // Per-game, per-shot-type count/points — tracks 7 and 11 separately so they can be pooled correctly below.
+            const sPpsTypes = { offense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 }, defense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 } };
+            const sPpsCounts = { offense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 }, defense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 } };
 
             gameRows.forEach(row => {
                 if (!row.system_sequence || row.system_sequence.trim() === "") return;
@@ -154,10 +158,38 @@ app.get('/api/stats/:teamName', (req, res) => {
                         }
                         if (idx === segments.length - 1) {
                             sTotals[side].system += (type + (row.system_sequence.match(/\//g) || []).length);
+                            // Mirrors the season-level shotDistribution logic, but scoped to this single game.
+                            if (sPpsCounts[side][type] !== undefined) {
+                                sPpsCounts[side][type]++;
+                                sPpsTypes[side][type] += (row.points || 0);
+                            }
                         }
                     }
                 });
             });
+
+            // Merge 7+11 into one pooled bucket (total points / total shots), expected PPS = 1.75.
+            // Order matches SHOT_TYPES on the frontend: [7_11, 6, 4, 3, 1, 0]
+            const pooled711Counts = { offense: sPpsCounts.offense[7] + sPpsCounts.offense[11], defense: sPpsCounts.defense[7] + sPpsCounts.defense[11] };
+            const pooled711Points = { offense: sPpsTypes.offense[7] + sPpsTypes.offense[11], defense: sPpsTypes.defense[7] + sPpsTypes.defense[11] };
+            const gamePpsByType = {
+                offense: [
+                    pooled711Counts.offense > 0 ? +(pooled711Points.offense / pooled711Counts.offense).toFixed(3) : null,
+                    sPpsCounts.offense[6] > 0 ? +(sPpsTypes.offense[6] / sPpsCounts.offense[6]).toFixed(3) : null,
+                    sPpsCounts.offense[4] > 0 ? +(sPpsTypes.offense[4] / sPpsCounts.offense[4]).toFixed(3) : null,
+                    sPpsCounts.offense[3] > 0 ? +(sPpsTypes.offense[3] / sPpsCounts.offense[3]).toFixed(3) : null,
+                    sPpsCounts.offense[1] > 0 ? +(sPpsTypes.offense[1] / sPpsCounts.offense[1]).toFixed(3) : null,
+                    sPpsCounts.offense[0] > 0 ? +(sPpsTypes.offense[0] / sPpsCounts.offense[0]).toFixed(3) : null,
+                ],
+                defense: [
+                    pooled711Counts.defense > 0 ? +(pooled711Points.defense / pooled711Counts.defense).toFixed(3) : null,
+                    sPpsCounts.defense[6] > 0 ? +(sPpsTypes.defense[6] / sPpsCounts.defense[6]).toFixed(3) : null,
+                    sPpsCounts.defense[4] > 0 ? +(sPpsTypes.defense[4] / sPpsCounts.defense[4]).toFixed(3) : null,
+                    sPpsCounts.defense[3] > 0 ? +(sPpsTypes.defense[3] / sPpsCounts.defense[3]).toFixed(3) : null,
+                    sPpsCounts.defense[1] > 0 ? +(sPpsTypes.defense[1] / sPpsCounts.defense[1]).toFixed(3) : null,
+                    sPpsCounts.defense[0] > 0 ? +(sPpsTypes.defense[0] / sPpsCounts.defense[0]).toFixed(3) : null,
+                ]
+            };
 
             const systemResult = sTotals.offense.system > sTotals.defense.system 
                 ? `W ${sTotals.offense.system.toFixed(0)}-${sTotals.defense.system.toFixed(0)}` 
@@ -193,7 +225,8 @@ app.get('/api/stats/:teamName', (req, res) => {
                 def3: getSidePct('defense', 3),
                 def1: getSidePct('defense', 1),
                 def7_11: `${getSidePct('defense', 7)} / ${getSidePct('defense', 11)}`,
-                def0: getSidePct('defense', 0)
+                def0: getSidePct('defense', 0),
+                gamePpsByType // { offense: [pps6, pps4, pps7, pps3, pps1, pps0], defense: [...] }, null where that type wasn't shot in this game
             };
         }).sort((a, b) => new Date(b.date) - new Date(a.date));
         // --- SURGICAL ADDITION END ---
@@ -233,7 +266,16 @@ app.get('/api/stats/:teamName', (req, res) => {
         const off = calculateMetrics(offRows, gamesPlayed);
         const def = calculateMetrics(defRows, gamesPlayed);
 
-        const shotTypes = [6, 4, 7, 3, 1, 0];
+        // Bucket order: 7/11 (merged), 6, 4, 3, 1, 0 — highest to lowest expected PPS.
+        // Type 11 is tracked separately in dist.stats but merged before sending to the frontend.
+        const shotTypes = [7, 11, 6, 4, 3, 1, 0];
+
+        // Roll per-game gamePpsByType (already in merged bucket order) into per-type arrays for the frontend.
+        const shotPpsLog = {
+            offense: [0,1,2,3,4,5].map(i => schedule.map(g => g.gamePpsByType.offense[i]).filter(v => v !== null)),
+            defense: [0,1,2,3,4,5].map(i => schedule.map(g => g.gamePpsByType.defense[i]).filter(v => v !== null))
+        };
+
         const dist = { offense: { totalCount: 0, stats: {} }, defense: { totalCount: 0, stats: {} } };
         shotTypes.forEach(t => {
             dist.offense.stats[t] = { count: 0, points: 0 };
@@ -263,13 +305,75 @@ app.get('/api/stats/:teamName', (req, res) => {
             def,
             schedule, // Spliced cleanly into your existing payload object
             shot_margin: ((off.shots - def.shots) / gamesPlayed).toFixed(2),
-            shotsGained100: (100 * (off.oRebs - off.turnovers) / (off.poss || 1)).toFixed(2),
-            shotsGained100d: (100 * (def.oRebs - def.turnovers) / (def.poss || 1)).toFixed(2),
-            shotDistribution: {
-                offense: shotTypes.map(t => ({ type: t, pct: dist.offense.totalCount > 0 ? ((dist.offense.stats[t].count / dist.offense.totalCount) * 100).toFixed(1) + '%' : '0.0%', pps: dist.offense.stats[t].count > 0 ? (dist.offense.stats[t].points / dist.offense.stats[t].count).toFixed(3) : '0.000' })),
-                defense: shotTypes.map(t => ({ type: t, pct: dist.defense.totalCount > 0 ? ((dist.defense.stats[t].count / dist.defense.totalCount) * 100).toFixed(1) + '%' : '0.0%', pps: dist.defense.stats[t].count > 0 ? (dist.defense.stats[t].points / dist.defense.stats[t].count).toFixed(3) : '0.000' }))
-            }
+            shotsGained100: (100 * ((off.oRebs + off.ftReb) - off.turnovers) / (off.poss || 1)).toFixed(2),
+            shotsGained100d: (100 * (def.turnovers - (def.oRebs + def.ftReb)) / (def.poss || 1)).toFixed(2),
+            shotDistribution: (() => {
+                // Merge 7+11 into one pooled bucket for both offense and defense.
+                const merge = (side) => {
+                    const d = dist[side];
+                    const pool711Count = (d.stats[7]?.count || 0) + (d.stats[11]?.count || 0);
+                    const pool711Points = (d.stats[7]?.points || 0) + (d.stats[11]?.points || 0);
+                    const pct = (count) => d.totalCount > 0 ? ((count / d.totalCount) * 100).toFixed(1) + '%' : '0.0%';
+                    const pps  = (pts, cnt) => cnt > 0 ? (pts / cnt).toFixed(3) : '0.000';
+                    return [
+                        { type: '7/11', pct: pct(pool711Count),                       pps: pps(pool711Points, pool711Count) },
+                        { type: 6,      pct: pct(d.stats[6]?.count || 0),             pps: pps(d.stats[6]?.points || 0, d.stats[6]?.count || 0) },
+                        { type: 4,      pct: pct(d.stats[4]?.count || 0),             pps: pps(d.stats[4]?.points || 0, d.stats[4]?.count || 0) },
+                        { type: 3,      pct: pct(d.stats[3]?.count || 0),             pps: pps(d.stats[3]?.points || 0, d.stats[3]?.count || 0) },
+                        { type: 1,      pct: pct(d.stats[1]?.count || 0),             pps: pps(d.stats[1]?.points || 0, d.stats[1]?.count || 0) },
+                        { type: 0,      pct: pct(d.stats[0]?.count || 0),             pps: pps(d.stats[0]?.points || 0, d.stats[0]?.count || 0) },
+                    ];
+                };
+                return { offense: merge('offense'), defense: merge('defense') };
+            })(),
+            shotPpsLog // per-game actual PPS arrays, keyed by side then shot type index (matches shotTypes order: 6,4,7,3,1,0)
         });
+    });
+});
+
+// Returns the average shot distribution (% of shots per merged bucket) across all teams.
+// Each team's percentages are computed independently then averaged, so high-volume teams
+// don't skew the league profile.
+app.get('/api/league-averages', (req, res) => {
+    const sql = `
+        SELECT p.team_type, p.system_sequence, g.home_team, g.away_team
+        FROM possessions p
+        JOIN games g ON p.game_id = g.game_id
+        WHERE p.system_sequence IS NOT NULL AND p.system_sequence != ''`;
+
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(400).json({ error: err.message });
+
+        const teamDists = {};
+        const getTeamDist = (name) => {
+            if (!teamDists[name]) teamDists[name] = { counts: { '7_11': 0, 6: 0, 4: 0, 3: 0, 1: 0, 0: 0 }, total: 0 };
+            return teamDists[name];
+        };
+
+        rows.forEach(row => {
+            const team = row.team_type === 'Home' ? row.home_team : row.away_team;
+            const d = getTeamDist(team);
+            const segments = row.system_sequence.split('/').filter(s => s !== '');
+            segments.forEach(seg => {
+                const raw = seg === '0' ? 0 : Math.floor(parseInt(seg) / 10);
+                const bucket = (raw === 7 || raw === 11) ? '7_11' : raw;
+                if (d.counts[bucket] !== undefined) {
+                    d.counts[bucket]++;
+                    d.total++;
+                }
+            });
+        });
+
+        const teams = Object.values(teamDists);
+        if (teams.length === 0) return res.json([]);
+
+        const buckets = ['7_11', 6, 4, 3, 1, 0];
+        const avg = buckets.map(b => {
+            const sum = teams.reduce((acc, t) => acc + (t.total > 0 ? (t.counts[b] / t.total) * 100 : 0), 0);
+            return { type: b === '7_11' ? '7/11' : b, pct: parseFloat((sum / teams.length).toFixed(1)) };
+        });
+
+        res.json(avg);
     });
 });
 
@@ -517,8 +621,8 @@ app.get('/api/system-accuracy', (req, res) => {
             const expected = type / 4;
             let rsd = 0;
             if (stats.pointList.length > 1 && actual > 0) {
-                const variance = stats.pointList.reduce((acc, p) => acc + Math.pow(p - actual, 2), 0) / stats.pointList.length;
-                rsd = (Math.sqrt(variance) / actual);
+                const variance = stats.pointList.reduce((acc, p) => acc + Math.pow(p - expected, 2), 0) / (stats.pointList.length);
+                rsd = (Math.sqrt(variance) / expected);
             }
             return {
                 type: type + "'s",
@@ -535,8 +639,8 @@ app.get('/api/system-accuracy', (req, res) => {
             const isMatch = (g.home_actual > g.away_actual === g.home_sys > g.away_sys);
             const diff = Math.abs(g.home_sys - g.away_sys);
             if (isMatch) matches++;
-            if (isMatch && diff > 10) conservative++;
-            if (isMatch || (!isMatch && diff <= 10)) aggressive++;
+            if (isMatch && diff > 5) conservative++;
+            if (isMatch || (!isMatch && diff <= 5)) aggressive++;
         });
 
         const rawDifferentials = Object.values(gamesMap).map(g => {
@@ -656,8 +760,8 @@ app.get('/api/league/summary', (req, res) => {
                 const totalDefShots = defMetrics.shots || 0;
                 const shotMarginG = ((totalOffShots - totalDefShots) / gp);
                 
-                const shotsGained100Off = offMetrics.poss > 0 ? ((offMetrics.shots - (offMetrics.poss * 0.74)) / offMetrics.poss) * 100 : 0;
-                const shotsGained100Def = defMetrics.poss > 0 ? ((defMetrics.shots - (defMetrics.poss * 0.74)) / defMetrics.poss) * 100 : 0;
+                const shotsGained100Off = offMetrics.poss > 0 ? (100 * ((offMetrics.oRebs + offMetrics.ftReb) - offMetrics.turnovers) / offMetrics.poss) : 0;
+                const shotsGained100Def = defMetrics.poss > 0 ? (100 * (defMetrics.turnovers - (defMetrics.oRebs + defMetrics.ftReb)) / defMetrics.poss) : 0;
 
                 // 3. Complete Shot type % and PPS distribution calculations
                 const getShotTypeData = (rows) => {
@@ -723,7 +827,7 @@ app.get('/api/league/summary', (req, res) => {
                         sysG: parseFloat(offMetrics.sysG),
                         shotMargin: shotMarginG >= 0 ? `+${shotMarginG.toFixed(1)}` : shotMarginG.toFixed(1),
                         possG: parseFloat(offMetrics.possG),
-                        shotsGained: parseFloat(shotsGained100Off.toFixed(1)),
+                        shotsGained: parseFloat(shotsGained100Off.toFixed(2)),
                         result_q: parseFloat(offMetrics.result_q),
                         shot_q: parseFloat(offMetrics.shot_q),
                         stint_q: parseFloat(offMetrics.stint_q),
@@ -735,7 +839,7 @@ app.get('/api/league/summary', (req, res) => {
                         sysG: parseFloat(defMetrics.sysG),
                         shotMargin: shotMarginG >= 0 ? `-${shotMarginG.toFixed(1)}` : `+${Math.abs(shotMarginG).toFixed(1)}`, // Inverted team defensive perspective
                         possG: parseFloat(defMetrics.possG),
-                        shotsGained: parseFloat(shotsGained100Def.toFixed(1)),
+                        shotsGained: parseFloat(shotsGained100Def.toFixed(2)),
                         result_q: parseFloat(defMetrics.result_q),
                         shot_q: parseFloat(defMetrics.shot_q),
                         stint_q: parseFloat(defMetrics.stint_q),

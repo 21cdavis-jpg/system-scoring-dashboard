@@ -48,7 +48,7 @@ function SystemDifferentialChart({ rawData }) {
 
     const maxDiff = Math.max(...safeData.map(d => Math.abs(d.systemDiff)), 10);
     const totalBins = Math.ceil(maxDiff / binSize);
-    
+
     const bins = Array.from({ length: totalBins }, (_, i) => {
       const min = i * binSize;
       const max = min + binSize - 1;
@@ -56,7 +56,7 @@ function SystemDifferentialChart({ rawData }) {
     });
 
     safeData.forEach(game => {
-      const diff = Math.abs(game.systemDiff); 
+      const diff = Math.abs(game.systemDiff);
       const targetBin = bins.find(b => diff >= b.min && diff <= b.max);
       if (targetBin) {
         targetBin.totalCount++;
@@ -90,15 +90,35 @@ function SystemDifferentialChart({ rawData }) {
 
       <div style={{ height: '350px', width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={binnedData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+          <BarChart data={binnedData} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-            <XAxis dataKey="range" stroke="#718096" fontSize={12} tickLine={false} />
-            <YAxis stroke="#718096" fontSize={12} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip 
-              cursor={{ fill: '#EDF2F7', opacity: 0.4 }}
-              formatter={(value, name) => [name === "System Accuracy" ? `${value}%` : value, name]}
+            <XAxis
+              dataKey="range"
+              stroke="#718096"
+              fontSize={12}
+              tickLine={false}
+              angle={-90}
+              textAnchor="end"
+              interval={0}
             />
-            <Bar dataKey="System Accuracy" fill='#2980b9' radius={[4, 4, 0, 0]} barSize={45} />
+            <YAxis stroke="#718096" fontSize={12} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+            <Tooltip
+              cursor={{ fill: '#EDF2F7', opacity: 0.4 }}
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div style={{ backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', padding: '10px', fontSize: '0.85rem' }}>
+                      <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: '#2c3e50' }}>Differential: {label}</p>
+                      <p style={{ margin: '0 0 3px 0', color: '#2980b9' }}>Accuracy: {payload[0].value}%</p>
+                      <p style={{ margin: 0, color: '#666' }}>Games: {payload[0].payload["Game Count"]}</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            
+            <Bar dataKey="System Accuracy" fill='#2980b9' radius={[4, 4, 0, 0]} barSize={45}/>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -246,6 +266,7 @@ function SortableLeagueTable({ data, columns, initialSortKey }) {
                 onClick={() => col.sortable !== false && requestSort(col.key)}
                 style={{ 
                   padding: '10px', 
+                  minWidth: col.minWidth || 'auto',
                   cursor: col.sortable !== false ? 'pointer' : 'default',
                   userSelect: 'none',
                   textAlign: 'center',
@@ -265,7 +286,7 @@ function SortableLeagueTable({ data, columns, initialSortKey }) {
                 const getNestedValue = (obj, path) => path.split('.').reduce((acc, part) => acc && acc[part], obj);
                 const rawVal = getNestedValue(row, col.key);
                 return (
-                  <td key={col.key} style={{ padding: '8px', fontSize: '0.85rem', borderBottom: '1px solid #e0e0e0' }}>
+                  <td key={col.key} style={{ padding: '8px', minWidth: col.minWidth || 'auto', fontSize: '0.85rem', borderBottom: '1px solid #e0e0e0' }}>
                     {typeof rawVal === 'number' && !col.key.includes('Record') ? rawVal.toFixed(col.decimals ?? 2) : rawVal}
                   </td>
                 );
@@ -686,16 +707,13 @@ function TeamPerformanceScatterPlot({ systemData }) {
 
   // Calculate dynamic chart domains to frame points nicely
   const domains = useMemo(() => {
-    if (chartData.length === 0) return { minX: 0.8, maxX: 1.4, minY: 0.8, maxY: 1.4 };
-    const xVals = chartData.map(d => d.x);
-    const yVals = chartData.map(d => d.y);
+    if (chartData.length === 0) return { min: 0.8, max: 1.4 };
+    const allVals = [...chartData.map(d => d.x), ...chartData.map(d => d.y)];
     return {
-      minX: Math.min(...xVals) * 0.98,
-      maxX: Math.max(...xVals) * 1.02,
-      minY: Math.min(...yVals) * 0.98,
-      maxY: Math.max(...yVals) * 1.02
+      min: Math.min(...allVals) * 0.98,
+      max: Math.max(...allVals) * 1.02,
     };
-  }, [chartData]);
+  }, [chartData]); 
 
   {/*const RenderTransparentScatterDot = (props) => {
     const { cx, cy } = props;
@@ -776,7 +794,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
                 type="number" 
                 dataKey="x" 
                 name={`Expected ${metric}`} 
-                domain={[domains.minX, domains.maxX]}
+                domain={[domains.min, domains.max]}
                 tickFormatter={(v) => v.toFixed(2)}
                 stroke="#718096"
                 label={{ value: `Expected ${metric} (System Model Baseline)`, position: 'insideBottom', offset: -15, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
@@ -787,7 +805,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
                 type="number" 
                 dataKey="y" 
                 name={`Actual ${metric}`} 
-                domain={[domains.minY, domains.maxY]}
+                domain={[domains.min, domains.max]}
                 tickFormatter={(v) => v.toFixed(2)}
                 stroke="#718096"
                 label={{ value: `Actual Executed ${metric}`, angle: -90, position: 'insideLeft', offset: -5, fill: '#2c3e50', fontWeight: 'bold', fontSize: 13 }}
@@ -827,7 +845,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
                 xAxisId="x-axis"
                 yAxisId="y-axis"
                 ifOverflow='extendDomain'
-                segment={[{ x: Math.min(domains.minX, domains.minY), y: Math.min(domains.minX, domains.minY) }, { x: Math.max(domains.maxX, domains.maxY), y: Math.max(domains.maxX, domains.maxY) }]} 
+                segment={[{ x: Math.min(domains.min, domains.min), y: Math.min(domains.min, domains.min) }, { x: Math.max(domains.max, domains.max), y: Math.max(domains.max, domains.max) }]} 
                 stroke="#ff0000" 
                 strokeWidth={2}
                 strokeDasharray="4 4"
@@ -856,7 +874,21 @@ function TeamPerformanceScatterPlot({ systemData }) {
             </ScatterChart>
           </ResponsiveContainer>
         </div>
-        </div>
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginTop: '8px',
+            fontSize: '0.8rem',
+            color: '#718096'
+          }}>
+            <svg width="40" height="8">
+              <line x1="0" y1="4" x2="240" y2="4" stroke="#ff0000" strokeWidth="2" strokeDasharray="4 4" />
+            </svg>
+            <span>Indicates system prediction matches actual performance for the metric for that team</span>
+          </div>
+      </div>
     </div>
   );
 }
@@ -1047,6 +1079,68 @@ function TeamLollipopChart({ teamTable }) {
   );
 }
 
+function TeamStatStrip({ teamTable }) {
+  const n = teamTable.length;
+  if (n === 0) return null;
+
+  const avg = (arr) => arr.reduce((a, b) => a + b, 0) / n;
+
+  const avgGB = avg(teamTable.map(r => Math.abs(parseFloat(r.gb))));
+  const avgMatchPct = avg(teamTable.map(r => {
+    const total = r.matched + r.mismatched;
+    return total > 0 ? (r.matched / total) * 100 : 0;
+  }));
+  const avgPpsDiff = avg(teamTable.map(r => Math.abs(parseFloat(r.ppsDiff))));
+  const avgPppDiff = avg(teamTable.map(r => Math.abs(parseFloat(r.pppDiff))));
+
+  const stats = [
+    { label: 'Avg Games Back', value: avgGB.toFixed(1), suffix: '', color: '#475569' },
+    { label: 'Avg Match Rate', value: avgMatchPct.toFixed(0), suffix: '%', color: '#10b981' },
+    { label: 'Avg PPS Diff', value: avgPpsDiff.toFixed(2), suffix: '', color: '#3b82f6' },
+    { label: 'Avg PPP Diff', value: avgPppDiff.toFixed(2), suffix: '', color: '#8b5cf6' },
+  ];
+
+  return (
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '16px',
+      border: '1px solid #e2e8f0',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      padding: '20px 8px',
+      margin: '24px 0',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+      gap: '12px'
+    }}>
+      {stats.map((s, idx) => (
+        <div key={idx} style={{
+          textAlign: 'center',
+          padding: '8px',
+          borderRight: idx < stats.length - 1 ? '1px solid #f1f5f9' : 'none'
+        }}>
+          <div style={{
+            fontSize: '1.8rem',
+            fontWeight: 'bold',
+            color: s.color,
+            lineHeight: 1.1
+          }}>
+            {s.value}{s.suffix}
+          </div>
+          <div style={{
+            fontSize: '0.7rem',
+            color: '#94a3b8',
+            textTransform: 'uppercase',
+            fontWeight: 'bold',
+            marginTop: '4px',
+            letterSpacing: '0.04em'
+          }}>
+            {s.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 // Helper component for section headers
 // ==========================================
 // SUB-COMPONENT: REWRITTEN TEAM PROFILE DASHBOARD (TEAM TAB)
@@ -1066,7 +1160,7 @@ function SectionHeader({ title }) {
       textTransform: 'uppercase',
       marginTop: '20px',
       borderRadius: '4px',
-      textAlign: 'left'
+      textAlign: 'center'
     }}>
       {title}
     </div>
@@ -1124,6 +1218,242 @@ function MetricRow({ label, offValue, defValue, isHighlighted = false, decimals 
       }}>
         {formatVal(defValue, isOreb)}
       </div>
+    </div>
+  );
+}
+
+// ==========================================
+// SUB-COMPONENT: SHOT TYPE BOX PLOT + DISTRIBUTION (TEAM TAB)
+// Replaces the old "Team Shot Type Breakdown" table. Box plot shows the
+// spread of per-game actual PPS for each shot type (dots = individual games,
+// dashed line = expected PPS for that type). Bar row below shows that side's
+// % of shots by type, column-aligned with the box plot above it.
+// ==========================================
+{/*const SHOT_TYPES = [6, 4, 7, 3, 1, 0];
+const SHOT_LABELS = ["6's", "4's", "7's", "3's", "1's", "0's"];
+const EXPECTED_PPS = [1.50, 1.00, 1.75, 0.75, 0.25, 0.00];
+
+function quantile(sortedArr, q) {
+  if (sortedArr.length === 0) return 0;
+  const pos = (sortedArr.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  return sortedArr[base + 1] !== undefined
+    ? sortedArr[base] + rest * (sortedArr[base + 1] - sortedArr[base])
+    : sortedArr[base];
+}
+
+function boxStats(arr) {
+  if (!arr || arr.length === 0) return null;
+  const sorted = [...arr].sort((a, b) => a - b);
+  return {
+    min: sorted[0],
+    q1: quantile(sorted, 0.25),
+    median: quantile(sorted, 0.5),
+    q3: quantile(sorted, 0.75),
+    max: sorted[sorted.length - 1],
+    n: sorted.length
+  };
+}
+
+function ShotSideBoxPlot({ side, ppsArrays, pctValues }) {
+  const COL_W = 100, COLS = 6, CHART_W = COL_W * COLS, CHART_H = 200, PAD_TOP = 10, PAD_BOT = 24;
+  const allVals = ppsArrays.flat();
+  const maxVal = Math.max(0.1, ...allVals, ...EXPECTED_PPS);
+  const niceTop = Math.ceil(maxVal * 10) / 10 + 0.2;
+  const yPix = (v) => PAD_TOP + (CHART_H - PAD_TOP - PAD_BOT) * (1 - v / niceTop);
+  const step = niceTop > 1.5 ? 0.5 : 0.25;
+  const gridVals = [];
+  for (let v = 0; v <= niceTop; v += step) gridVals.push(v);
+
+  return (
+    <div style={{ marginBottom: '8px' }}>
+      <svg
+        viewBox={`-34 0 ${CHART_W + 10} ${CHART_H}`}
+        style={{ width: '100%', height: 'auto', display: 'block' }}
+        role="img"
+        aria-label={`Box plot of per-game actual points per shot by shot type for ${side}`}
+      >
+        {gridVals.map((v, i) => (
+          <React.Fragment key={i}>
+            <line x1="0" y1={yPix(v)} x2={CHART_W} y2={yPix(v)} stroke="#e0e0e0" strokeWidth="0.5" />
+            <text x="-6" y={yPix(v) + 3} textAnchor="end" fontSize="10" fill="#7f8c8d">{v.toFixed(2)}</text>
+          </React.Fragment>
+        ))}
+        {SHOT_TYPES.map((t, i) => {
+          const cx = i * COL_W + COL_W / 2;
+          const boxW = 36;
+          const stats = boxStats(ppsArrays[i]);
+          if (!stats) {
+            return (
+              <text key={t} x={cx} y={CHART_H / 2} textAnchor="middle" fontSize="11" fill="#bbb">no shots</text>
+            );
+          }
+          return (
+            <React.Fragment key={t}>
+              <line x1={cx} y1={yPix(stats.max)} x2={cx} y2={yPix(stats.q3)} stroke="#0F6E56" strokeWidth="1.2" />
+              <line x1={cx} y1={yPix(stats.min)} x2={cx} y2={yPix(stats.q1)} stroke="#0F6E56" strokeWidth="1.2" />
+              <line x1={cx - 10} y1={yPix(stats.max)} x2={cx + 10} y2={yPix(stats.max)} stroke="#0F6E56" strokeWidth="1.2" />
+              <line x1={cx - 10} y1={yPix(stats.min)} x2={cx + 10} y2={yPix(stats.min)} stroke="#0F6E56" strokeWidth="1.2" />
+              <rect x={cx - boxW / 2} y={yPix(stats.q3)} width={boxW} height={Math.max(1, yPix(stats.q1) - yPix(stats.q3))} fill="#9FE1CB" stroke="#0F6E56" strokeWidth="1.2" />
+              <line x1={cx - boxW / 2} y1={yPix(stats.median)} x2={cx + boxW / 2} y2={yPix(stats.median)} stroke="#0F6E56" strokeWidth="1.6" />
+              <line x1={cx - boxW / 2 - 4} y1={yPix(EXPECTED_PPS[i])} x2={cx + boxW / 2 + 4} y2={yPix(EXPECTED_PPS[i])} stroke="#A32D2D" strokeWidth="2" strokeDasharray="4,3" />
+              {ppsArrays[i].map((v, gi) => {
+                const jitter = ((gi * 37 % 100) / 100 - 0.5) * boxW * 0.9;
+                return <circle key={gi} cx={cx + jitter} cy={yPix(v)} r="2.5" fill="#534AB7" opacity="0.65" />;
+              })}
+              <text x={cx} y={CHART_H - 6} textAnchor="middle" fontSize="12" fill="#2c3e50">{SHOT_LABELS[i]}</text>
+            </React.Fragment>
+          );
+        })}
+      </svg>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', textAlign: 'center', marginTop: '4px' }}>
+        {SHOT_TYPES.map((t, i) => {
+          const pct = pctValues[i];
+          const barMaxH = 50;
+          const maxPct = Math.max(...pctValues, 1);
+          const h = (pct / maxPct) * barMaxH;
+          return (
+            <div key={t} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '11px', color: '#7f8c8d' }}>{pct.toFixed(1)}%</span>
+              <div style={{ width: '36px', height: `${barMaxH}px`, display: 'flex', alignItems: 'flex-end' }}>
+                <div style={{ width: '100%', height: `${h}px`, background: '#AFA9EC', borderRadius: '2px 2px 0 0' }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ textAlign: 'center', fontSize: '11px', color: '#7f8c8d', marginTop: '2px' }}>% of shots</div>
+    </div>
+  );
+}
+
+function ShotTypeBoxPlot({ shotPpsLog, shotDistribution }) {
+  if (!shotPpsLog || !shotDistribution) return null;
+  const offPct = shotDistribution.offense.map(item => parseFloat(item.pct));
+  const defPct = shotDistribution.defense.map(item => parseFloat(item.pct));
+
+  return (
+    <div style={{ marginTop: '40px', textAlign: 'left' }}>
+      <h3 style={{ marginBottom: '20px' }}>Team Shot Type Breakdown</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+        <span style={{ fontSize: '14px', fontWeight: '500' }}>Offense</span>
+        <span style={{ fontSize: '12px', color: '#7f8c8d' }}>dash = expected PPS &middot; dots = per-game actual PPS</span>
+      </div>
+      <ShotSideBoxPlot side="offense" ppsArrays={shotPpsLog.offense} pctValues={offPct} />
+
+      <div style={{ marginTop: '24px', marginBottom: '8px' }}>
+        <span style={{ fontSize: '14px', fontWeight: '500' }}>Defense</span>
+      </div>
+      <ShotSideBoxPlot side="defense" ppsArrays={shotPpsLog.defense} pctValues={defPct} />
+    </div>
+  );
+} */}
+
+// ==========================================
+// SUB-COMPONENT: SHOT DISTRIBUTION CHARTS (TEAM TAB)
+// Three stacked bars (Offense | League Avg | Defense) showing % of shots per type.
+// Two diverging bar charts below (Offense, Defense) showing actual PPS minus expected PPS.
+// Shot type order: 7/11s → 6s → 4s → 3s → 1s → 0s (highest to lowest expected PPS).
+// ==========================================
+const SHOT_LABELS = ["7/11's", "6's", "4's", "3's", "1's", "0's"];
+const SHOT_KEYS   = ['7/11', 6, 4, 3, 1, 0];
+const EXPECTED_PPS = { '7/11': 1.75, 6: 1.50, 4: 1.00, 3: 0.75, 1: 0.25, 0: 0.00 };
+const SHOT_COLORS  = { '7/11': '#7F77DD', 6: '#1D9E75', 4: '#378ADD', 3: '#BA7517', 1: '#D85A30', 0: '#888780' };
+
+function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist }) {
+  if (!shotDistribution || !shotPpsLog) return null;
+
+  // --- Stacked bar data ---
+  // One object per group (Offense, League Avg, Defense), each key is a shot type %.
+  const parsePct = (pctStr) => parseFloat(pctStr) || 0;
+
+  const stackedData = [
+    { name: 'Offense',    ...Object.fromEntries(shotDistribution.offense.map(d => [String(d.type), parsePct(d.pct)])) },
+    { name: 'League Avg', ...Object.fromEntries((leagueAvgDist || []).map(d => [String(d.type), d.pct])) },
+    { name: 'Defense',    ...Object.fromEntries(shotDistribution.defense.map(d => [String(d.type), parsePct(d.pct)])) },
+  ];
+
+  // --- Diverging chart data: actual PPS minus expected ---
+  const makeDeltaData = (distSide) => distSide.map(d => {
+    const exp = EXPECTED_PPS[d.type] ?? 0;
+    const actual = parseFloat(d.pps) || 0;
+    const delta = parseFloat((actual - exp).toFixed(3));
+    return { name: d.type === '7/11' ? "7/11's" : `${d.type}'s`, delta, actual, exp };
+  });
+
+  const offDelta = makeDeltaData(shotDistribution.offense);
+  const defDelta = makeDeltaData(shotDistribution.defense);
+
+  const barStyle = { fontSize: '12px', fill: '#2c3e50' };
+  const axisStyle = { fontSize: '11px', fill: '#7f8c8d' };
+
+  const DivergingChart = ({ data, title }) => (
+    <div style={{ flex: 1 }}>
+      <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: '500', color: '#2c3e50', marginBottom: '6px' }}>{title}</div>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} margin={{ top: 10, right: 16, left: 16, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
+          <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+          <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={v => v.toFixed(2)} />
+          <ReferenceLine y={0} stroke="#2c3e50" strokeWidth={1.5} />
+          <Tooltip
+            formatter={(val, name, props) => [`${val > 0 ? '+' : ''}${val.toFixed(3)} (actual: ${props.payload.actual.toFixed(3)})`, 'vs Expected']}
+            contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #ddd' }}
+          />
+          <Bar dataKey="delta" radius={[2, 2, 0, 0]}>
+            {data.map((entry, i) => (
+              <Cell key={i} fill={entry.delta >= 0 ? '#1D9E75' : '#D85A30'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: '40px' }}>
+      <h3 style={{ marginBottom: '8px' }}>Team Shot Type Breakdown</h3>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+        {SHOT_KEYS.map((k, i) => (
+          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#2c3e50' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
+            {SHOT_LABELS[i]}
+          </span>
+        ))}
+      </div>
+
+      {/* Stacked distribution bars */}
+      <div style={{ marginBottom: '4px', fontSize: '12px', color: '#7f8c8d', textAlign: 'center' }}>Shot Distribution (%)</div>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={stackedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8e8e8" />
+          <XAxis dataKey="name" tick={barStyle} axisLine={false} tickLine={false} />
+          <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <Tooltip
+            formatter={(val, name) => [`${val.toFixed(1)}%`, `${name}'s`]}
+            contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #ddd' }}
+          />
+          {SHOT_KEYS.map(k => (
+            <Bar key={k} dataKey={String(k)} stackId="a" fill={SHOT_COLORS[k]} name={k === '7/11' ? '7/11' : String(k)} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* Diverging PPS delta charts */}
+      <div style={{ marginTop: '28px', marginBottom: '4px', fontSize: '12px', color: '#7f8c8d', textAlign: 'center' }}>
+        Actual PPS vs Expected PPS (delta) — green above expected, red below
+      </div>
+      <div style={{ display: 'flex', gap: '16px' }}>
+        <DivergingChart data={offDelta} title="Offense" />
+        <DivergingChart data={defDelta} title="Defense" />
+      </div>
+
+      {/* Old table kept for reference:
+      <ShotTypeBoxPlot shotPpsLog={shotPpsLog} shotDistribution={shotDistribution} />
+      */}
     </div>
   );
 }
@@ -1232,10 +1562,10 @@ function TeamProfileDashboard({ teamData, systemRecord = "0-0" }) {
       </div>
 
       {/* 2. Metrics Presentation Matrix Container */}
-      <div style={{ padding: '10px 20px 25px 20px' }}>
+      <div style={{ padding: '10px 20px 25px 20px', textAlign:'center'}}>
         
         {/* "Overall" Section */}
-        <SectionHeader title="Overall" />
+        <SectionHeader title="Overall"/>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <MetricRow label="System Score" offValue={offSystemScore} defValue={defSystemScore} isHighlighted={true} decimals={1} />
           <MetricRow label="PPG" offValue={offPPG} defValue={defPPG} decimals={1} />
@@ -1246,7 +1576,7 @@ function TeamProfileDashboard({ teamData, systemRecord = "0-0" }) {
         {/* "More" Section */}
         <SectionHeader title="More" />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <MetricRow label="Shots Gained/100" offValue={offShotsGained} defValue={defShotsGained} decimals={1} />
+          <MetricRow label="Shots Gained/100" offValue={offShotsGained} defValue={defShotsGained} decimals={2} />
           <MetricRow label="OREB%" offValue={offOreb} defValue={defOreb} />
           <MetricRow label="FT Reb" offValue={offFtReb} defValue={defFtReb} decimals={1} />
         </div>
@@ -1278,7 +1608,7 @@ function App() {
   const [systemStats, setSystemStats] = useState(null);
   const [leagueSummary, setLeagueSummary] = useState([]);
   const [leagueLoading, setLeagueLoading] = useState(false);
-
+  const [leagueAvgDist, setLeagueAvgDist] = useState(null);
   // Layout refinement settings
   const [viewMode, setViewMode] = useState('coach'); 
   const [periodMetric, setPeriodMetric] = useState('systemScore'); 
@@ -1297,6 +1627,11 @@ function App() {
           setLeagueLoading(false);
         });
     }
+    if (activeTab === 'Team' && !leagueAvgDist) {
+          axios.get(`${API_BASE_URL}/api/league-averages`)
+            .then(res => setLeagueAvgDist(res.data))
+            .catch(err => console.error("Error fetching league averages:", err));
+        }
   }, [activeTab]);
 
   const fetchPlays = (gameId) => {
@@ -1583,7 +1918,7 @@ function App() {
         {/* REWRITTEN INTERACTIVE COACH-CENTRIC GAMES TAB              */}
         {/* ========================================================= */}
         {activeTab === 'Games' && (
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left' }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'center' }}>
             
             {/* Control Strip: Game Picker & Layout Toggle */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
@@ -1598,14 +1933,14 @@ function App() {
                 </select>
               </div>
               
-              {plays.length > 0 && (
+              {/*plays.length > 0 && (
                 <button 
                   onClick={() => setViewMode(viewMode === 'coach' ? 'classic' : 'coach')}
                   style={{ padding: '8px 16px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}
                 >
                   {viewMode === 'coach' ? '📋 Switch to Classic Tables' : '📊 Switch to Coach Charts'}
                 </button>
-              )}
+              )*/}
             </div>
 
             {plays.length > 0 ? (
@@ -1860,8 +2195,8 @@ function App() {
               <>
               
                 <TeamProfileDashboard teamData={selectedTeamStats} systemRecord={selectedTeamStats.sysRecord || "0-0"} />
-                
-                <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                <ShotDistributionCharts shotDistribution={selectedTeamStats.shotDistribution} shotPpsLog={selectedTeamStats.shotPpsLog} leagueAvgDist={leagueAvgDist} />
+                {/*<div style={{ marginTop: '20px', textAlign: 'left' }}>
                   <h3 style = {{textAlign: 'center'}}>{selectedTeamStats.teamName} ({selectedTeamStats.record})</h3>
                   <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                     <thead>
@@ -1880,7 +2215,9 @@ function App() {
                       </tr>
                     </tbody>
                   </table>
-                </div>
+                </div> */}
+
+                {/*<ShotTypeBoxPlot shotPpsLog={selectedTeamStats.shotPpsLog} shotDistribution={selectedTeamStats.shotDistribution} /> */}
 
                 <div style={{ marginTop: '40px', textAlign: 'left' }}>
                   <h3 style={{ marginBottom: '20px' }}>Team Shot Type Breakdown</h3>
@@ -1914,7 +2251,7 @@ function App() {
                 </div>
 
                 <div style={{ marginTop: '40px', width: '100%', overflowX: 'auto', textAlign: 'left' }}>
-                  <h3 style={{ marginBottom: '15px' }}>Schedule</h3>
+                  <h3 style={{ marginBottom: '15px', textAlign: 'center' }}>Schedule</h3>
                   <table className="play-table" style={{ fontSize: '0.74rem', width: '100%', borderCollapse: 'collapse', whiteSpace: 'nowrap', textAlign: 'center' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
@@ -1931,12 +2268,12 @@ function App() {
                     <tbody>
                       {selectedTeamStats.schedule && selectedTeamStats.schedule.map((game, idx) => (
                         <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                          <td>{game.date}</td><td style={{ textAlign: 'left', fontWeight: '500' }}>{game.opponent}</td>
+                          <td>{new Date(game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td><td style={{ textAlign: 'center', fontWeight: '500' }}>{game.opponent}</td>
                           <td style={{ fontWeight: 'bold', color: game.gameResult.startsWith('W') ? 'green' : 'red' }}>{game.gameResult}</td>
                           <td style={{ color: game.systemResult.startsWith('W') ? 'green' : 'red' }}>{game.systemResult}</td>
-                          <td style={{ fontWeight: '500', color: game.shotMargin.startsWith('+') ? 'green' : 'inherit' }}>{game.shotMargin}</td><td>{game.possSummary}</td>
-                          <td style={{ backgroundColor: '#f4fbf9', fontWeight: '500' }}>{game.sqOff}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.rqOff}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off6}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off4}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off3}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off1}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.5rem' }}>{game.off7_11}</td><td style={{ backgroundColor: '#f4fbf9', color: '#c0392b' }}>{game.off0}</td>
-                          <td style={{ backgroundColor: '#f5f9fc', fontWeight: '500' }}>{game.sqDef}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.rqDef}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def6}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def4}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def3}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def1}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.5rem' }}>{game.def7_11}</td><td style={{ backgroundColor: '#f5f9fc', color: '#c0392b' }}>{game.def0}</td>
+                          <td style={{ fontWeight: '500', color: game.shotMargin.startsWith('+') ? 'green' : 'red' }}>{game.shotMargin}</td><td>{game.possSummary}</td>
+                          <td style={{ backgroundColor: '#f4fbf9', fontWeight: '500' }}>{game.sqOff}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.rqOff}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off6}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off4}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off3}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off1}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.5rem' }}>{game.off7_11}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off0}</td>
+                          <td style={{ backgroundColor: '#f5f9fc', fontWeight: '500' }}>{game.sqDef}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.rqDef}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def6}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def4}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def3}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def1}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.5rem' }}>{game.def7_11}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def0}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1961,17 +2298,17 @@ function App() {
               <div style={{ padding: '24px', textAlign: 'center', fontStyle: 'italic', color: '#888' }}>Processing data statistics across database files...</div>
             ) : (
               <div>
-                <h3 style={{ textAlign: 'left', color: '#2c3e50', margin: '20px 0 10px 0' }}>🏀 Team Offensive Performance Summary</h3>
-                <SortableLeagueTable data={leagueSummary} initialSortKey="offense.result_q" columns={[{ key: 'teamName', label: 'Team Name', sortable: true }, { key: 'record', label: 'Record', sortable: true }, { key: 'systemRecord', label: 'System Record', sortable: true }, { key: 'offense.sysG', label: 'System Score', decimals: 2 }, { key: 'offense.shotMargin', label: 'Shot Margin', sortable: true }, { key: 'offense.possG', label: 'Possessions', decimals: 1 }, { key: 'offense.shotsGained', label: 'Shots Gained/100', decimals: 1 }, { key: 'offense.result_q', label: 'Result Quality', decimals: 3 }, { key: 'offense.shot_q', label: 'Shot Quality', decimals: 3 }, { key: 'offense.stint_q', label: 'Stint Quality', decimals: 3 }, { key: 'offense.oRebPct', label: 'OREB%', sortable: true }, { key: 'offense.ftRebG', label: 'FT REB', decimals: 2 }]} />
+                <h3 style={{ textAlign: 'center', color: '#2c3e50', margin: '20px 0 10px 0' }}>🏀 Team Offensive Performance Summary</h3>
+                <SortableLeagueTable data={leagueSummary} initialSortKey="offense.sysG" columns={[{ key: 'teamName', label: 'Team Name', sortable: true, minWidth: '110px' }, { key: 'record', label: 'Record', sortable: true }, { key: 'systemRecord', label: 'System Record', sortable: true }, { key: 'offense.sysG', label: 'System Score', decimals: 1 }, { key: 'offense.shotMargin', label: 'Shot Margin', sortable: true }, { key: 'offense.possG', label: 'Poss/G', decimals: 1 }, { key: 'offense.shotsGained', label: 'Shots Gained/100', decimals: 2 }, { key: 'offense.result_q', label: 'Result Quality', decimals: 2 }, { key: 'offense.shot_q', label: 'Shot Quality', decimals: 2 }, { key: 'offense.stint_q', label: 'Stint Quality', decimals: 2 }, { key: 'offense.oRebPct', label: 'OREB%', sortable: true }, { key: 'offense.ftRebG', label: 'FT REB', decimals: 1 }]} />
 
-                <h3 style={{ textAlign: 'left', color: '#c0392b', margin: '30px 0 10px 0' }}>🛡️ Team Defensive Performance Summary</h3>
-                <SortableLeagueTable data={leagueSummary} initialSortKey="defense.result_q" columns={[{ key: 'teamName', label: 'Team Name', sortable: true }, { key: 'record', label: 'Record', sortable: true }, { key: 'systemRecord', label: 'System Record', sortable: true }, { key: 'defense.sysG', label: 'System Score', decimals: 2 }, { key: 'defense.shotMargin', label: 'Shot Margin', sortable: true }, { key: 'defense.possG', label: 'Possessions', decimals: 1 }, { key: 'defense.shotsGained', label: 'Shots Gained/100', decimals: 1 }, { key: 'defense.result_q', label: 'Result Quality', decimals: 3 }, { key: 'defense.shot_q', label: 'Shot Quality', decimals: 3 }, { key: 'defense.stint_q', label: 'Stint Quality', decimals: 3 }, { key: 'defense.oRebPct', label: 'OREB%', sortable: true }, { key: 'defense.ftRebG', label: 'FT REB', decimals: 2 }]} />
+                <h3 style={{ textAlign: 'center', color: '#c0392b', margin: '30px 0 10px 0' }}>🛡️ Team Defensive Performance Summary</h3>
+                <SortableLeagueTable data={leagueSummary} initialSortKey="defense.sysG" columns={[{ key: 'teamName', label: 'Team Name', sortable: true, minWidth: '110px' }, { key: 'record', label: 'Record', sortable: true }, { key: 'systemRecord', label: 'System Record', sortable: true }, { key: 'defense.sysG', label: 'System Score', decimals: 1 }, { key: 'defense.shotMargin', label: 'Shot Margin', sortable: true }, { key: 'defense.possG', label: 'Poss/G', decimals: 1 }, { key: 'defense.shotsGained', label: 'Shots Gained/100', decimals: 2 }, { key: 'defense.result_q', label: 'Result Quality', decimals: 2 }, { key: 'defense.shot_q', label: 'Shot Quality', decimals: 2 }, { key: 'defense.stint_q', label: 'Stint Quality', decimals: 2 }, { key: 'defense.oRebPct', label: 'OREB%', sortable: true }, { key: 'defense.ftRebG', label: 'FT REB', decimals: 1 }]} />
 
-                <h3 style={{ textAlign: 'left', color: '#2c3e50', margin: '30px 0 10px 0' }}>📊 Shot Distribution & Execution Breakdown (Offense)</h3>
-                <SortableLeagueTable data={leagueSummary} initialSortKey="teamName" columns={[{ key: 'teamName', label: 'Team Name', sortable: true }, { key: 'offense.distribution.0.pct', label: "% of Shots (6's)" }, { key: 'offense.distribution.0.pps', label: "Actual PPS (6's)" }, { key: 'offense.distribution.1.pct', label: "% of Shots (4's)" }, { key: 'offense.distribution.1.pps', label: "Actual PPS (4's)" }, { key: 'offense.distribution.2.pct', label: "% of Shots (7's)" }, { key: 'offense.distribution.2.pps', label: "Actual PPS (7's)" }, { key: 'offense.distribution.3.pct', label: "% of Shots (3's)" }, { key: 'offense.distribution.3.pps', label: "Actual PPS (3's)" }, { key: 'offense.distribution.4.pct', label: "% of Shots (1's)" }, { key: 'offense.distribution.4.pps', label: "Actual PPS (1's)" }, { key: 'offense.distribution.5.pct', label: "% of Shots (0's)" }, { key: 'offense.distribution.5.pps', label: "Actual PPS (0's)" }]} />
+                <h3 style={{ textAlign: 'center', color: '#2c3e50', margin: '30px 0 10px 0' }}>📊 Shot Distribution & Execution Breakdown (Offense)</h3>
+                <SortableLeagueTable data={leagueSummary} initialSortKey="offense.distribution.0.pct" columns={[{ key: 'teamName', label: 'Team Name', sortable: true, minWidth: '110px' }, { key: 'offense.distribution.0.pct', label: "% of Shots (6's)" }, { key: 'offense.distribution.0.pps', label: "Actual PPS (6's)" }, { key: 'offense.distribution.1.pct', label: "% of Shots (4's)" }, { key: 'offense.distribution.1.pps', label: "Actual PPS (4's)" }, { key: 'offense.distribution.2.pct', label: "% of Shots (7's)" }, { key: 'offense.distribution.2.pps', label: "Actual PPS (7's)" }, { key: 'offense.distribution.3.pct', label: "% of Shots (3's)" }, { key: 'offense.distribution.3.pps', label: "Actual PPS (3's)" }, { key: 'offense.distribution.4.pct', label: "% of Shots (1's)" }, { key: 'offense.distribution.4.pps', label: "Actual PPS (1's)" }, { key: 'offense.distribution.5.pct', label: "% of Shots (0's)" }, { key: 'offense.distribution.5.pps', label: "Actual PPS (0's)" }]} />
 
-                <h3 style={{ textAlign: 'left', color: '#c0392b', margin: '30px 0 10px 0' }}>🎯 Shot Distribution & Execution Breakdown (Defense)</h3>
-                <SortableLeagueTable data={leagueSummary} initialSortKey="teamName" columns={[{ key: 'teamName', label: 'Team Name', sortable: true }, { key: 'defense.distribution.0.pct', label: "% of Shots (6's)" }, { key: 'defense.distribution.0.pps', label: "Actual PPS (6's)" }, { key: 'defense.distribution.1.pct', label: "% of Shots (4's)" }, { key: 'defense.distribution.1.pps', label: "Actual PPS (4's)" }, { key: 'defense.distribution.2.pct', label: "% of Shots (7's)" }, { key: 'defense.distribution.2.pps', label: "Actual PPS (7's)" }, { key: 'defense.distribution.3.pct', label: "% of Shots (3's)" }, { key: 'defense.distribution.3.pps', label: "Actual PPS (3's)" }, { key: 'defense.distribution.4.pct', label: "% of Shots (1's)" }, { key: 'defense.distribution.4.pps', label: "Actual PPS (1's)" }, { key: 'defense.distribution.5.pct', label: "% of Shots (0's)" }, { key: 'defense.distribution.5.pps', label: "Actual PPS (0's)" }]} />
+                <h3 style={{ textAlign: 'center', color: '#c0392b', margin: '30px 0 10px 0' }}>🎯 Shot Distribution & Execution Breakdown (Defense)</h3>
+                <SortableLeagueTable data={leagueSummary} initialSortKey="defense.distribution.0.pct" columns={[{ key: 'teamName', label: 'Team Name', sortable: true, minWidth: '110px' }, { key: 'defense.distribution.0.pct', label: "% of Shots (6's)" }, { key: 'defense.distribution.0.pps', label: "Actual PPS (6's)" }, { key: 'defense.distribution.1.pct', label: "% of Shots (4's)" }, { key: 'defense.distribution.1.pps', label: "Actual PPS (4's)" }, { key: 'defense.distribution.2.pct', label: "% of Shots (7's)" }, { key: 'defense.distribution.2.pps', label: "Actual PPS (7's)" }, { key: 'defense.distribution.3.pct', label: "% of Shots (3's)" }, { key: 'defense.distribution.3.pps', label: "Actual PPS (3's)" }, { key: 'defense.distribution.4.pct', label: "% of Shots (1's)" }, { key: 'defense.distribution.4.pps', label: "Actual PPS (1's)" }, { key: 'defense.distribution.5.pct', label: "% of Shots (0's)" }, { key: 'defense.distribution.5.pps', label: "Actual PPS (0's)" }]} />
               </div>
             )}
           </section>
@@ -1994,11 +2331,11 @@ function App() {
               <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#bdc3c7', fontWeight: 'bold' }}>
                 Overall Accuracy
               </span>
-              <h2 style={{ fontSize: '3.5rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
+              <h2 style={{ fontSize: '2.8rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
                 {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
               </h2>
               <h3 style={{ fontSize: '1.0rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
-                Projected Record: {systemStats.standard.count}-{systemStats.total - systemStats.standard.count}
+                Projected Record: {Math.round((systemStats.standard.count / systemStats.total) * 28)}-{28-Math.round((systemStats.standard.count / systemStats.total) * 28)}
               </h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: '#ecf0f1', opacity: 0.95 }}>
                 *Accuracy of game outcomes picked by System Score.
@@ -2025,10 +2362,10 @@ function App() {
                 {systemStats.conservative.pct}% ({systemStats.conservative.count}/{systemStats.total})
               </h2>
               <h3 style={{ fontSize: '1.0rem', margin: '6px 0', color: '#16a085', fontWeight: '800', lineHeight: '1' }}>
-                Projected Record: {systemStats.aggressive.count}-{systemStats.total - systemStats.aggressive.count}
+                Projected Record: {Math.floor((systemStats.conservative.count / systemStats.total) * 28)}-{28-Math.floor((systemStats.conservative.count / systemStats.total) * 28)}
               </h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: '#7f8c8d' }}>
-                *Accuracy if all games within 10 System Score points were counted as System losses.
+                *Accuracy if all games within 5 System Score points were counted as System losses.
               </p>
             </div>
 
@@ -2041,7 +2378,7 @@ function App() {
                 {systemStats.aggressive.pct}% ({systemStats.aggressive.count}/{systemStats.total})
               </h2>
               <h3 style={{ fontSize: '1.0rem', margin: '6px 0', color: '#e67e22', fontWeight: '800', lineHeight: '1' }}>
-                Projected Record: {systemStats.conservative.count}-{systemStats.total - systemStats.conservative.count}
+                Projected Record: {Math.round((systemStats.aggressive.count / systemStats.total) * 28)}-{28-Math.round((systemStats.aggressive.count / systemStats.total) * 28)}
               </h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: '#7f8c8d' }}>
                 *Accuracy if all games within 5 System Score points were counted as System wins.
@@ -2100,12 +2437,12 @@ function App() {
             
             {/* SCATTER PLOT INJECTED HERE AT THE TOP OF THE SYSTEM VIEW */}
             <TeamPerformanceScatterPlot systemData={systemStats.teamTable} />
-
+            <TeamStatStrip teamTable={systemStats.teamTable} />
             <TeamPerformanceCards teamTable={systemStats.teamTable} />
 
-            <TeamLollipopChart teamTable={systemStats.teamTable} />
+            {/*<TeamLollipopChart teamTable={systemStats.teamTable} />*/}
             
-            <div style={{ marginTop: '40px', width: '100%', textAlign: 'left' }}>
+            {/*<div style={{ marginTop: '40px', width: '100%', textAlign: 'left' }}>
               <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Team Performance vs. System</h2>
               <div style={{ overflowX: 'auto', width: '100%' }}>
                 <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
@@ -2126,16 +2463,16 @@ function App() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </div> */}
             
             
             <hr style={{ margin: '40px auto 20px auto', width: '90%', border: '0', borderTop: '1px solid #ddd' }} />
             <p style={{ margin: 20, fontSize: '1.2rem', color: '#666' }}>Behind the dashboard is a complete analytical framework — explore the full research, methodology, and findings below.</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '40px' }}>
-              <a href="/manuals/MEC_Shot_Quality_Study.pdf" target="_blank" rel="noopener noreferrer" style={{ padding: '10px 20px', backgroundColor: '#16a085', color: 'white', textDecoration: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+              <a href="/manuals/MEC_Shot_Quality_Study.pdf#page=1" target="_blank" rel="noopener noreferrer" style={{ padding: '10px 20px', backgroundColor: '#16a085', color: 'white', textDecoration: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
                 📄 System Scoring Study Write-Up (PDF)
               </a>
-              <a href="/manuals/Shot_Quality_Scoring_System_Presentation.pdf" target="_blank" rel="noopener noreferrer" style={{ padding: '10px 20px', backgroundColor: '#2980b9', color: 'white', textDecoration: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+              <a href="/manuals/Shot_Quality_Scoring_System_Presentation.pdf#page=1" target="_blank" rel="noopener noreferrer" style={{ padding: '10px 20px', backgroundColor: '#2980b9', color: 'white', textDecoration: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
                 📄 System Scoring Study Presentation (PDF)
               </a>
             </div>
