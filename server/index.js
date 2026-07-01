@@ -203,6 +203,12 @@ app.get('/api/stats/:teamName', (req, res) => {
                 return total > 0 ? ((sCounts[side][type] / total) * 100).toFixed(1) + '%' : '0.0%';
             };
 
+            const getSideCombinedPct = (side, types) => {
+                const total = Object.values(sCounts[side]).reduce((a, b) => a + b, 0);
+                const combinedCount = types.reduce((sum, t) => sum + (sCounts[side][t] || 0), 0);
+                return total > 0 ? ((combinedCount / total) * 100).toFixed(1) + '%' : '0.0%';
+            };
+
             return {
                 date: gameInfo.date,
                 opponent: oppDisplay,
@@ -216,7 +222,7 @@ app.get('/api/stats/:teamName', (req, res) => {
                 off4: getSidePct('offense', 4),
                 off3: getSidePct('offense', 3),
                 off1: getSidePct('offense', 1),
-                off7_11: `${getSidePct('offense', 7)} / ${getSidePct('offense', 11)}`,
+                off7_11: getSideCombinedPct('offense', [7, 11]),
                 off0: getSidePct('offense', 0),
                 sqDef: sTotals.defense.shots > 0 ? (sTotals.defense.sQual / sTotals.defense.shots).toFixed(2) : '0.00',
                 rqDef: sTotals.defense.poss > 0 ? (sTotals.defense.system / sTotals.defense.poss).toFixed(2) : '0.00',
@@ -224,7 +230,7 @@ app.get('/api/stats/:teamName', (req, res) => {
                 def4: getSidePct('defense', 4),
                 def3: getSidePct('defense', 3),
                 def1: getSidePct('defense', 1),
-                def7_11: `${getSidePct('defense', 7)} / ${getSidePct('defense', 11)}`,
+                def7_11: getSideCombinedPct('defense', [7, 11]),
                 def0: getSidePct('defense', 0),
                 gamePpsByType // { offense: [pps6, pps4, pps7, pps3, pps1, pps0], defense: [...] }, null where that type wasn't shot in this game
             };

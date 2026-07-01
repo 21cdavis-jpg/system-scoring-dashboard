@@ -315,7 +315,7 @@ main {
 .label-text {
   padding: 0 4px;
   font-weight: 500;
-  color: #7f8c8d; /* Clean, slightly muted slate color for stat titles */
+  color: #2c3e50; /* Clean, slightly muted slate color for stat titles */
 }
 
 /* Typography Scale */
@@ -326,10 +326,10 @@ main {
   height: 32px;
 }
 
-.massive-text { font-weight: 800; color: #2c3e50; }
+.massive-text { font-size: 1.4rem; font-weight: 900; color: #2c3e50; }
 .large-text { font-weight: 700; }
 .normal-text { color: #34495e; }
-.small-subtext { font-size: 0.85rem; font-weight: 400; color: #95a5a6; margin-left: 4px; }
+.small-subtext { font-size: 0.85rem; font-weight: 700; color: #2c3e50; margin-left: 4px; }
 .font-bold { font-weight: 700; }
 
 .team-label-title {
@@ -369,6 +369,57 @@ main {
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
+  border-radius: 50%;
+}
+
+/* ============================= */
+/* TEAM COLOR ACCENTS (Executive Matchup) */
+/* ============================= */
+
+/* Top stripe: gradient split between home and away team colors.
+   --home-accent / --away-accent are set inline per-game in App.jsx */
+.team-accent-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.team-accent-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(to right, var(--home-accent, #16a085), var(--away-accent, #2980b9));
+}
+
+/* Mini win-probability bar, replaces the plain percentage text */
+.win-prob-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.win-prob-track {
+  flex: 0 1 60px;
+  height: 8px;
+  background: #ecf0f1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.win-prob-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+@media (max-width: 768px) {
+  .win-prob-track {
+    flex-basis: 44px;
+  }
 }
 
 /* Force image to scale correctly inside its block container */

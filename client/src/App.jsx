@@ -333,11 +333,27 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
     e.target.style.display = 'none'; // Hides the broken image link smoothly
   };
 
+  // --- TEAM COLOR ACCENTS ---
+  // Pull each team's brand primary color from TEAM_COLORS. If a team's
+  // primary is near-white (unreadable on a white card), fall back to
+  // their secondary color instead. Unknown teams fall back to the
+  // existing default teal/blue.
+  const pickAccent = (teamName, fallback) => {
+    const c = TEAM_COLORS[teamName];
+    if (!c) return fallback;
+    return getLuminance(c.primary) > 0.9 ? (c.secondary || fallback) : c.primary;
+  };
+  const homeAccent = pickAccent(homeTeam, DEFAULT_HOME_COLOR);
+  const awayAccent = pickAccent(awayTeam, DEFAULT_AWAY_COLOR);
+
   return (
-    <div className="coach-card executive-matchup-grid" style={{ marginBottom: '25px' }}>
+    <div
+      className="coach-card executive-matchup-grid team-accent-card"
+      style={{ marginBottom: '25px', '--home-accent': homeAccent, '--away-accent': awayAccent }}
+    >
       {/* LEFT COLUMN: HOME TEAM */}
-      <div className="team-column">
-        <div className="team-logo-container">
+      <div className="team-column" style={{ background: `linear-gradient(180deg, ${homeAccent}14, transparent 60%)` }}>
+        <div className="team-logo-container" style={{ background: `radial-gradient(circle, ${homeAccent}33 0%, transparent 72%)` }}>
           <img 
             src={homeLogoSrc} 
             alt={`${homeTeam} Logo`} 
@@ -345,14 +361,19 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
             onError={handleImageError}
           />
         </div>
-        <h2 className="team-name">{homeTeam}</h2>
-        <div className="metric-value massive-text">{homeScore} <span className="small-subtext">({homePPP} PPP)</span></div>
-        <div className="metric-value large-text text-accent">{homeSystemScore} <span className="small-subtext">({homeRQ} RQ)</span></div>
-        <div className="metric-value normal-text">{homePoss}</div>
+        <h2 className="team-name" style={{ color: homeAccent }}>{homeTeam}</h2>
+        <div className="metric-value massive-text" style={{ color: homeAccent }}>{homeScore} <span className="small-subtext">({homePPP} PPP)</span></div>
+        <div className="metric-value massive-text" style={{ color: homeAccent }}>{homeSystemScore} <span className="small-subtext">({homeRQ} RQ)</span></div>
+        <div className="metric-value normal-text font-bold" style={{ color: homeAccent }}>{homePoss}</div>
         <div className="metric-gap"></div>
-        <div className="metric-value normal-text font-bold">{homeSQ}</div>
-        <div className="metric-value normal-text">{homeShotMargin > 0 ? `+${homeShotMargin}` : homeShotMargin}</div>
-        <div className="metric-value large-text text-win-prob">{winProbability}%</div>
+        <div className="metric-value normal-text font-bold" style={{ color: homeAccent }}>{homeSQ}</div>
+        <div className="metric-value normal-text font-bold" style={{ color: homeAccent }}>{homeShotMargin > 0 ? `+${homeShotMargin}` : homeShotMargin}</div>
+        <div className="metric-value large-text win-prob-cell">
+          <div className="win-prob-track">
+            <div className="win-prob-fill" style={{ width: `${winProbability}%`, background: homeAccent }} />
+          </div>
+          <span style={{ color: homeAccent, fontWeight: 800 }}>{winProbability}%</span>
+        </div>
       </div>
 
       {/* CENTER COLUMN: LABELS */}
@@ -369,8 +390,8 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
       </div>
 
       {/* RIGHT COLUMN: AWAY TEAM */}
-      <div className="team-column">
-        <div className="team-logo-container">
+      <div className="team-column" style={{ background: `linear-gradient(180deg, ${awayAccent}14, transparent 60%)` }}>
+        <div className="team-logo-container" style={{ background: `radial-gradient(circle, ${awayAccent}33 0%, transparent 72%)` }}>
           <img 
             src={awayLogoSrc} 
             alt={`${awayTeam} Logo`} 
@@ -378,14 +399,19 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
             onError={handleImageError}
           />
         </div>
-        <h2 className="team-name">{awayTeam}</h2>
-        <div className="metric-value massive-text">{awayScore} <span className="small-subtext">({awayPPP} PPP)</span></div>
-        <div className="metric-value large-text text-accent">{awaySystemScore} <span className="small-subtext">({awayRQ} RQ)</span></div>
-        <div className="metric-value normal-text">{awayPoss}</div>
+        <h2 className="team-name font-bold" style={{ color: awayAccent }}>{awayTeam}</h2>
+        <div className="metric-value massive-text" style={{ color: awayAccent }}>{awayScore} <span className="small-subtext">({awayPPP} PPP)</span></div>
+        <div className="metric-value massive-text" style={{ color: awayAccent }}>{awaySystemScore} <span className="small-subtext">({awayRQ} RQ)</span></div>
+        <div className="metric-value normal-text font-bold" style={{ color: awayAccent }}>{awayPoss}</div>
         <div className="metric-gap"></div>
-        <div className="metric-value normal-text font-bold">{awaySQ}</div>
-        <div className="metric-value normal-text">{awayShotMargin > 0 ? `+${awayShotMargin}` : awayShotMargin}</div>
-        <div className="metric-value large-text text-win-prob">{(100 - winProbability)}%</div>
+        <div className="metric-value normal-text font-bold" style={{ color: awayAccent }}>{awaySQ}</div>
+        <div className="metric-value normal-text font-bold" style={{ color: awayAccent }}>{awayShotMargin > 0 ? `+${awayShotMargin}` : awayShotMargin}</div>
+        <div className="metric-value large-text win-prob-cell">
+          <div className="win-prob-track">
+            <div className="win-prob-fill" style={{ width: `${100 - winProbability}%`, background: awayAccent }} />
+          </div>
+          <span style={{ color: awayAccent, fontWeight: 800 }}>{(100 - winProbability)}%</span>
+        </div>
       </div>
     </div>
   );
@@ -427,20 +453,20 @@ function ShotDistributionAndExecution({ gameSummary }) {
   const awayExpected7_11 = calculateExpected7_11(away.breakdown);
 
   const homePieData = [
-    { name: "6's", value: parsePercent(home.breakdown?.s6), color: '#2ecc71'},
-    { name: "4's", value: parsePercent(home.breakdown?.s4), color: '#16a085' },
-    { name: "7's/11's", value: parsePercent(home.breakdown?.s7_11), color: '#f1c40f' },
+    { name: "6's", value: parsePercent(home.breakdown?.s6), color: '#32CD32'},
+    { name: "4's", value: parsePercent(home.breakdown?.s4), color: '#2980b9' },
+    { name: "7's/11's", value: parsePercent(home.breakdown?.s7_11), color: '#2c3e50'  },
     { name: "3's", value: parsePercent(home.breakdown?.s3), color: '#e67e22' },
-    { name: "1's", value: parsePercent(home.breakdown?.s1), color: '#e74c3c' },
+    { name: "1's", value: parsePercent(home.breakdown?.s1), color: '#FF0000' },
     { name: "0's", value: parsePercent(home.breakdown?.s0), color: '#000000' }
   ].filter(d => d.value > 0);
-
+  
   const awayPieData = [
-    { name: "6's", value: parsePercent(away.breakdown?.s6), color: '#2ecc71' },
-    { name: "4's", value: parsePercent(away.breakdown?.s4), color:  '#16a085'},
-    { name: "7's/11's", value: parsePercent(away.breakdown?.s7_11), color: '#f1c40f' },
+    { name: "6's", value: parsePercent(away.breakdown?.s6), color: '#32CD32' },
+    { name: "4's", value: parsePercent(away.breakdown?.s4), color:  '#2980b9'},
+    { name: "7's/11's", value: parsePercent(away.breakdown?.s7_11), color: '#2c3e50' },
     { name: "3's", value: parsePercent(away.breakdown?.s3), color: '#e67e22' },
-    { name: "1's", value: parsePercent(away.breakdown?.s1), color: '#e74c3c' },
+    { name: "1's", value: parsePercent(away.breakdown?.s1), color: '#FF0000' },
     { name: "0's", value: parsePercent(away.breakdown?.s0), color: '#000000' }
   ].filter(d => d.value > 0);
 
@@ -554,7 +580,7 @@ function ShotDistributionAndExecution({ gameSummary }) {
 
         </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', fontSize: '0.75rem', marginTop: '5px' }}>
-          {[['6\'s', '#2ecc71'], ['4\'s', '#16a085'], ['7/11\'s', '#f1c40f'], ['3\'s', '#e67e22'], ['1\'s', '#e74c3c'], ['0\'s', '#000000']].map(tag => (
+          {[['6\'s', '#32CD32'], ['4\'s', '#2980b9'], ['7/11\'s', '#2c3e50'], ['3\'s', '#e67e22'], ['1\'s', '#FF0000'], ['0\'s', '#000000']].map(tag => (
             <span key={tag[0]} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><b style={{ color: tag[1] }}>■</b> {tag[0]}</span>
           ))}
         </div>
@@ -610,10 +636,22 @@ const TEAM_COLORS = {
   "D&E": {"primary": "#D21C2E", "secondary": "#FFFFFF"},
   "Point Park": {"primary": "#6D8D24", "secondary": "#FDB813"},
   "WVSU": {"primary": "#CFAB2B", "secondary": "#000000"},
-  "Salem": {"primary": "#149348", "secondary": "#FFFFFF"}
+  "Salem": {"primary": "#149348", "secondary": "#FFFFFF"},
+  "Wesleyan": {"primary": "#FF4C00", "secondary": "#000000"}
 };
 const DEFAULT_HOME_COLOR = "#16a085";
 const DEFAULT_AWAY_COLOR = "#2980b9";
+
+// ==========================================
+// TEAM TAB "FRAME" COLORS
+// Frame background = team's primary color as-is.
+// Card border = team's secondary color as-is.
+// ==========================================
+const getTeamFrameColors = (teamName) => {
+  const colors = TEAM_COLORS[teamName];
+  if (!colors) return { frame: '#2c3e50', accent: '#16a085' };
+  return { frame: colors.primary, accent: colors.secondary };
+};
 
 export const getChartColors = (homeName, awayName) => {
   const homeColors = TEAM_COLORS[homeName] || { primary: DEFAULT_HOME_COLOR, secondary: "#ffffff" };
@@ -1359,14 +1397,86 @@ function ShotTypeBoxPlot({ shotPpsLog, shotDistribution }) {
 const SHOT_LABELS = ["7/11's", "6's", "4's", "3's", "1's", "0's"];
 const SHOT_KEYS   = ['7/11', 6, 4, 3, 1, 0];
 const EXPECTED_PPS = { '7/11': 1.75, 6: 1.50, 4: 1.00, 3: 0.75, 1: 0.25, 0: 0.00 };
-const SHOT_COLORS  = { '7/11': '#7F77DD', 6: '#1D9E75', 4: '#378ADD', 3: '#BA7517', 1: '#D85A30', 0: '#888780' };
-
+// Matches the PieChart palette on the Games tab
+const SHOT_COLORS = { '7/11': '#2c3e50', 6: '#32CD32', 4: '#2980b9', 3: '#e67e22', 1: '#FF0000', 0: '#000000' };
+//colors =  '#32CD32', '#2980b9', '#2c3e50', '#e67e22', '#FF0000', '#000000'
 // Stack order (bottom -> top) as requested: High = 6, 4, 7/11 | Low = 3, 0, 1
 const HIGH_STACK_ORDER = [6, 4, '7/11'];
 const LOW_STACK_ORDER  = [3, 0, 1];
 
-function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist }) {
+function shadeColor(hex, percent) {
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+
+  const target = percent < 0 ? 0 : 255;
+  const p = Math.abs(percent) / 100;
+
+  r = Math.round((target - r) * p) + r;
+  g = Math.round((target - g) * p) + g;
+  b = Math.round((target - b) * p) + b;
+
+  return `#${(1 << 24 | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+}
+
+// Perceived brightness, 0 (black) -> 1 (white)
+function getLuminance(hex) {
+  const num = parseInt(hex.slice(1), 16);
+  const r = (num >> 16) & 0xff;
+  const g = (num >> 8) & 0xff;
+  const b = num & 0xff;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+// Returns [lightest, mid, darkest] shades of a color.
+// If the color is already near-white or near-black, shifts the whole
+// trio in the one direction that still has visible room, so all 3
+// stay distinguishable instead of clipping to the same value.
+function getShadeTrio(hex) {
+  const lum = getLuminance(hex);
+  let percents;
+
+  if (lum > 0.85) {
+    percents = [-10, -30, -50];      // near-white: only darken
+  } else if (lum < 0.15) {
+    percents = [50, 30, 10];         // near-black: only lighten
+  } else {
+    percents = [25, 0, -25];         // normal: spread both directions
+  }
+
+  return percents.map(p => shadeColor(hex, p));
+}
+
+// Builds the 6-key SHOT_COLORS-style object for a given team,
+// using primary shades for the High Quality tier and secondary
+// shades for the Low Quality tier.
+function generateTeamShotColors(teamName) {
+  const team = TEAM_COLORS[teamName];
+  if (!team) return null;
+
+  const [primaryLight, primaryMid, primaryDark] = getShadeTrio(team.primary);
+  const [secondaryLight, secondaryMid, secondaryDark] = getShadeTrio(team.secondary);
+
+  return {
+    '7/11': primaryDark,     // highest-value High Quality shot -> boldest shade
+    6:      primaryMid,
+    4:      primaryLight,
+    3:      secondaryDark,   // highest-value Low Quality shot -> boldest shade
+    1:      secondaryMid,
+    0:      secondaryLight,
+  };
+}
+// Stack order (bottom -> top) as requested: High = 6, 4, 7/11 | Low = 3, 0, 1
+//const HIGH_STACK_ORDER = [6, 4, '7/11'];
+//const LOW_STACK_ORDER  = [3, 0, 1];
+
+function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist, teamName }) {
   if (!shotDistribution || !shotPpsLog) return null;
+
+  const teamAccent = TEAM_COLORS[teamName] || { primary: '#378ADD', secondary: '#888780' };
+
+  //const SHOT_COLORS = generateTeamShotColors(teamName) || FALLBACK_SHOT_COLORS;
 
   const parsePct = (pctStr) => parseFloat(pctStr) || 0;
 
@@ -1384,7 +1494,7 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
   // Only includes keys relevant to that tier, so tooltips don't show the other tier's 0% entries.
   const buildTierData = (qualityKeys) => ([
     { name: 'Offense',        ...Object.fromEntries(qualityKeys.map(k => [String(k), offensePctMap[String(k)] ?? 0])) },
-    { name: 'League Average', ...Object.fromEntries(qualityKeys.map(k => [String(k), leaguePctMap[String(k)] ?? 0])) },
+    { name: 'Average', ...Object.fromEntries(qualityKeys.map(k => [String(k), leaguePctMap[String(k)] ?? 0])) },
     { name: 'Defense',        ...Object.fromEntries(qualityKeys.map(k => [String(k), defensePctMap[String(k)] ?? 0])) },
   ]);
 
@@ -1426,7 +1536,8 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
   };
 
   const GroupBarChart = ({ data, title, stackOrder, showYAxis }) => (
-    <div style={{ flex: 1 }}>
+    <div style={{ flex: 1}}>
+    {/*<div style={{ flex: 1, borderTop: `3px solid ${teamAccent.primary}`, paddingTop: '8px' }}>*/}
       <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#2c3e50', marginBottom: '6px' }}>{title}</div>
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={data} margin={{ top: 5, right: 5, left: showYAxis ? 0 : -20, bottom: 5 }}>
@@ -1463,7 +1574,7 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
           />
           <Bar dataKey="delta" radius={[2, 2, 0, 0]}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={entry.delta >= 0 ? '#1D9E75' : '#D85A30'} />
+              <Cell key={i} fill={entry.delta >= 0 ? 'green' : 'red'} />
             ))}
           </Bar>
         </BarChart>
@@ -1472,20 +1583,20 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
   );
 
   return (
-    <div style={{ marginTop: '40px' }}>
+    <div>
       <h3 style={{
-        marginBottom: '2px',
-        fontSize: '19px',
+        marginBottom: '6px',
+        fontSize: '1.2rem',
         fontWeight: '700',
         color: '#1a2332',
         letterSpacing: '0.2px',
       }}>
         Team Shot Type Breakdown
       </h3>
-      <div style={{ height: '3px', width: '48px', background: '#378ADD', borderRadius: '2px', marginBottom: '16px' }} />
-
+      {/*<div style={{ height: '3px', width: '48px', background: '#378ADD', borderRadius: '2px', marginBottom: '16px' }} />
+      <div style={{ height: '3px', width: '48px', background: teamAccent.primary, borderRadius: '2px', marginBottom: '16px' }} />*/}
       {/* Stacked distribution: one mini chart per quality tier, Offense/League Avg/Defense bars */}
-      <div style={{ marginBottom: '8px', fontSize: '15px', color: '#1a2332', textAlign: 'center', fontWeight: '700' }}>
+      <div style={{ marginBottom: '8px', fontSize: '0.9rem', color: '#1a2332', textAlign: 'center', fontWeight: '700' }}>
         Shot Distribution (%)
       </div>
       <div style={{ display: 'flex', gap: '16px' }}>
@@ -1494,9 +1605,9 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
       </div>
 
       {/* Legend, grouped by quality tier, at the bottom */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '12px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}>High Quality:</span>
+      <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}></span>
           {HIGH_STACK_ORDER.map(k => (
             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
               <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
@@ -1504,8 +1615,8 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
             </span>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}>Low Quality:</span>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}></span>
           {LOW_STACK_ORDER.map(k => (
             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
               <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
@@ -1516,8 +1627,9 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
       </div>
 
       {/* Diverging PPS delta charts */}
-      <div style={{ marginTop: '28px', marginBottom: '4px', fontSize: '12px', color: '#7f8c8d', textAlign: 'center' }}>
-        Actual PPS vs Expected PPS (delta) — green above expected, red below
+      <div style={{ marginTop: '12px', marginBottom: '8px', fontSize: '0.9rem', color: '#1a2332', textAlign: 'center', fontWeight: '700' }}>
+        Actual PPS vs. Expected PPS 
+        <p>(<span style={{ color: 'green'}}>Green=Above</span>, <span style={{color: 'red'}}>Red=Below</span>)</p>
       </div>
       <div style={{ display: 'flex', gap: '16px' }}>
         <DivergingChart data={offDelta} title="Offense" />
@@ -1533,7 +1645,7 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist })
 
 
 
-function TeamProfileDashboard({ teamData, systemRecord = "0-0" }) {
+function TeamProfileDashboard({ teamData, systemRecord = "0-0", accentColor = "#16a085" }) {
   if (!teamData) return null;
 
   const name = teamData.teamName || "Selected Team";
@@ -1577,10 +1689,10 @@ function TeamProfileDashboard({ teamData, systemRecord = "0-0" }) {
     <div style={{
       width: '100%',
       maxWidth: '850px',
-      margin: '20px auto',
+      margin: '0 auto',
       backgroundColor: 'white',
       borderRadius: '8px',
-      border: '1px solid #ddd',
+      border: `4px solid ${accentColor}`,
       boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
       overflow: 'hidden'
     }}>
@@ -2022,7 +2134,7 @@ function App() {
               viewMode === 'coach' ? (
                 /* NEW INTERACTIVE VIEW HOOKS */
                 <div className="coach-dashboard-layout" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                  
+                  <h3 style={{ margin: '0 0 5px 0', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', color: '#2c3e50' }}>Game Summary</h3>
                   {/* Section 1: Top Dashboard Grid */}
                   <ExecutiveMatchup gameData={gameSummary} winProbability={62} />
 
@@ -2266,11 +2378,23 @@ function App() {
               {allTeams.map(team => <option key={team} value={team}>{team}</option>)}
             </select>
             
-            {selectedTeamStats && (
-              <>
+            {selectedTeamStats && (() => {
+              const { frame, accent } = getTeamFrameColors(selectedTeamStats.teamName);
+              return (
+              <div style={{
+                marginTop: '20px',
+                background: frame,
+                borderRadius: '14px',
+                padding: '18px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
               
-                <TeamProfileDashboard teamData={selectedTeamStats} systemRecord={selectedTeamStats.sysRecord || "0-0"} />
-                <ShotDistributionCharts shotDistribution={selectedTeamStats.shotDistribution} shotPpsLog={selectedTeamStats.shotPpsLog} leagueAvgDist={leagueAvgDist} />
+                <TeamProfileDashboard teamData={selectedTeamStats} systemRecord={selectedTeamStats.sysRecord || "0-0"} accentColor={accent} />
+                <div style={{ width: '100%', maxWidth: '850px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', border: `4px solid ${accent}`, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', padding: '20px 24px' }}>
+                  <ShotDistributionCharts shotDistribution={selectedTeamStats.shotDistribution} shotPpsLog={selectedTeamStats.shotPpsLog} leagueAvgDist={leagueAvgDist} teamName={selectedTeamStats.teamName} />
+                </div>
                 {/*<div style={{ marginTop: '20px', textAlign: 'left' }}>
                   <h3 style = {{textAlign: 'center'}}>{selectedTeamStats.teamName} ({selectedTeamStats.record})</h3>
                   <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
@@ -2294,7 +2418,7 @@ function App() {
 
                 {/*<ShotTypeBoxPlot shotPpsLog={selectedTeamStats.shotPpsLog} shotDistribution={selectedTeamStats.shotDistribution} /> */}
 
-                <div style={{ marginTop: '40px', textAlign: 'left' }}>
+                {/*<div style={{ marginTop: '40px', textAlign: 'left' }}>
                   <h3 style={{ marginBottom: '20px' }}>Team Shot Type Breakdown</h3>
                   <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                     <thead>
@@ -2323,21 +2447,35 @@ function App() {
                       </tr>
                     </tbody>
                   </table>
-                </div>
+                </div> */}
 
-                <div style={{ marginTop: '40px', width: '100%', overflowX: 'auto', textAlign: 'left' }}>
+                <div style={{ width: 'fit-content', margin: '0 auto', overflowX: 'auto', maxWidth: '100%', textAlign: 'left', backgroundColor: 'white', borderRadius: '8px', border: `4px solid ${accent}`, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', padding: '5px 5px' }}>
                   <h3 style={{ marginBottom: '15px', textAlign: 'center' }}>Schedule</h3>
-                  <table className="play-table" style={{ fontSize: '0.74rem', width: '100%', borderCollapse: 'collapse', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                  <style>{`
+                    .schedule-table th, .schedule-table td { padding: 3px 4px; }
+                    .schedule-table thead th { line-height: 1.2; white-space: pre-line; }
+                  `}</style>
+                  <table className="play-table schedule-table" style={{ fontSize: '0.65rem', width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                    <colgroup>
+                      <col style={{ width: '48px' }} />
+                      <col style={{ width: '85px' }} />
+                      <col style={{ width: '48px' }} />
+                      <col style={{ width: '48px' }} />
+                      <col style={{ width: '42px' }} />
+                      <col style={{ width: '48px' }} />
+                      {[...Array(8)].map((_, i) => <col key={`off-${i}`} style={{ width: '35px' }} />)}
+                      {[...Array(8)].map((_, i) => <col key={`def-${i}`} style={{ width: '35px' }} />)}
+                    </colgroup>
                     <thead>
                       <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                        <th colSpan="6" style={{ fontSize: '0.9rem' }}>Game Summary</th>
-                        <th colSpan="8" style={{ backgroundColor: '#16a085', fontSize: '0.9rem' }}>Offensive Breakdown</th>
-                        <th colSpan="8" style={{ backgroundColor: '#2980b9', fontSize: '0.9rem' }}>Defensive Breakdown</th>
+                        <th colSpan="6" style={{ fontSize: '1.0rem' }}>Game Summary</th>
+                        <th colSpan="8" style={{ backgroundColor: '#16a085', fontSize: '1.0rem' }}>Offensive Breakdown</th>
+                        <th colSpan="8" style={{ backgroundColor: '#2980b9', fontSize: '1.0rem' }}>Defensive Breakdown</th>
                       </tr>
                       <tr style={{ backgroundColor: '#ecf0f1', color: '#2c3e50', fontWeight: 'bold' }}>
-                        <th>Date</th><th>Opp.</th><th>Game Result</th><th>System Result</th><th>Shot Margin</th><th>Poss.</th>
-                        {['SQ Off', 'RQ Off', '6% Off', '4% Off', '3% Off', '1% Off', '7/11% Off', '0% Off'].map(h => <th key={h} style={{ backgroundColor: '#e8f8f5' }}>{h}</th>)}
-                        {['SQ Def', 'RQ Def', '6% Def', '4% Def', '3% Def', '1% Def', '7/11% Def', '0% Def'].map(h => <th key={h} style={{ backgroundColor: '#eaf2f8' }}>{h}</th>)}
+                        <th>Date</th><th>Opp.</th><th>{"Game\nResult"}</th><th>{"System\nResult"}</th><th>{"Shot\nMargin"}</th><th>Poss.</th>
+                        {['SQ Off', 'RQ Off', '6% Off', '4% Off', '3% Off', '1% Off', '7/11% Off', '0% Off'].map(h => <th key={h} style={{ backgroundColor: '#e8f8f5' }}>{h.replace(' ', '\n')}</th>)}
+                        {['SQ Def', 'RQ Def', '6% Def', '4% Def', '3% Def', '1% Def', '7/11% Def', '0% Def'].map(h => <th key={h} style={{ backgroundColor: '#eaf2f8' }}>{h.replace(' ', '\n')}</th>)}
                       </tr>
                     </thead>
                     <tbody>
@@ -2347,15 +2485,16 @@ function App() {
                           <td style={{ fontWeight: 'bold', color: game.gameResult.startsWith('W') ? 'green' : 'red' }}>{game.gameResult}</td>
                           <td style={{ color: game.systemResult.startsWith('W') ? 'green' : 'red' }}>{game.systemResult}</td>
                           <td style={{ fontWeight: '500', color: game.shotMargin.startsWith('+') ? 'green' : 'red' }}>{game.shotMargin}</td><td>{game.possSummary}</td>
-                          <td style={{ backgroundColor: '#f4fbf9', fontWeight: '500' }}>{game.sqOff}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.rqOff}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off6}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off4}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off3}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off1}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.5rem' }}>{game.off7_11}</td><td style={{ backgroundColor: '#f4fbf9' }}>{game.off0}</td>
-                          <td style={{ backgroundColor: '#f5f9fc', fontWeight: '500' }}>{game.sqDef}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.rqDef}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def6}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def4}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def3}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def1}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.5rem' }}>{game.def7_11}</td><td style={{ backgroundColor: '#f5f9fc' }}>{game.def0}</td>
+                          <td style={{ backgroundColor: '#f4fbf9', fontWeight: '500', fontSize: '0.65rem' }}>{game.sqOff}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.rqOff}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off6}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem'}}>{game.off4}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off3}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off1}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off7_11}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off0}</td>
+                          <td style={{ backgroundColor: '#f5f9fc', fontWeight: '500', fontSize: '0.65rem' }}>{game.sqDef}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.rqDef}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def6}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def4}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def3}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def1}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def7_11}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def0}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </>
-            )}
+              </div>
+              );
+            })()}
           </section>
         )}
 
@@ -2406,7 +2545,7 @@ function App() {
               <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#bdc3c7', fontWeight: 'bold' }}>
                 Overall Accuracy
               </span>
-              <h2 style={{ fontSize: '2.8rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
+              <h2 style={{ fontSize: '2.8rem', margin: '12px 0', color: '#fff', fontWeight: '700', lineHeight: '1' }}>
                 {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
               </h2>
               <h3 style={{ fontSize: '1.0rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
