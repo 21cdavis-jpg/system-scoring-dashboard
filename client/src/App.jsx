@@ -934,9 +934,7 @@ function TeamPerformanceScatterPlot({ systemData }) {
 function TeamPerformanceCards({ teamTable }) {
   return (
     <div style={{ marginTop: '40px' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#2c3e50' }}>
-        Team Performance vs. System
-      </h2>
+      
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
@@ -1583,7 +1581,37 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist, t
   );
 
   return (
-    <div>
+    <div style={{
+        //border: `4px solid ${teamAccent.primary}`,
+        borderRadius: '8px',
+        padding: '12px',
+        width: '100%',
+        minWidth: 0,        // <-- critical if this card is itself inside a flex/grid parent
+        boxSizing: 'border-box',
+        overflow: 'hidden'  // safety net: clips anything that still tries to overflow
+      }}>
+      <style>{`
+        .shot-charts-row {
+          display: flex;
+          gap: 16px;
+          min-width: 0
+        }
+        .shot-chart-item {
+          flex: 1;
+          min-width: 0; /* prevents flex children from overflowing their parent */
+        }
+        @media (max-width: 640px) {
+          .shot-charts-row {
+            flex-direction: column;
+          }
+          .shot-chart-item {
+            
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 4px;
+          }
+        }
+      `}</style>
       <h3 style={{
         marginBottom: '6px',
         fontSize: '1.2rem',
@@ -1599,41 +1627,43 @@ function ShotDistributionCharts({ shotDistribution, shotPpsLog, leagueAvgDist, t
       <div style={{ marginBottom: '8px', fontSize: '0.9rem', color: '#1a2332', textAlign: 'center', fontWeight: '700' }}>
         Shot Distribution (%)
       </div>
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <GroupBarChart data={highQualityData} title="High Quality" stackOrder={HIGH_STACK_ORDER} showYAxis={true} />
-        <GroupBarChart data={lowQualityData} title="Low Quality" stackOrder={LOW_STACK_ORDER} showYAxis={true} />
-      </div>
-
-      {/* Legend, grouped by quality tier, at the bottom */}
-      <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}></span>
-          {HIGH_STACK_ORDER.map(k => (
-            <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
-              <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
-              {k === '7/11' ? "7/11's" : `${k}'s`}
-            </span>
-          ))}
+      <div className="shot-charts-row">
+        <div className="shot-chart-item">
+          <GroupBarChart data={highQualityData} title="High Quality" stackOrder={HIGH_STACK_ORDER} showYAxis={true} />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+            {HIGH_STACK_ORDER.map(k => (
+              <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
+                <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
+                {k === '7/11' ? "7/11's" : `${k}'s`}
+              </span>
+            ))}
+          </div>
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '11px', fontWeight: '600', color: '#7f8c8d' }}></span>
-          {LOW_STACK_ORDER.map(k => (
-            <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
-              <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
-              {k}'s
-            </span>
-          ))}
+        <div className="shot-chart-item">
+          <GroupBarChart data={lowQualityData} title="Low Quality" stackOrder={LOW_STACK_ORDER} showYAxis={true} />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+            {LOW_STACK_ORDER.map(k => (
+              <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#2c3e50' }}>
+                <span style={{ width: '11px', height: '11px', borderRadius: '2px', background: SHOT_COLORS[k], display: 'inline-block' }} />
+                {k}'s
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Diverging PPS delta charts */}
       <div style={{ marginTop: '12px', marginBottom: '8px', fontSize: '0.9rem', color: '#1a2332', textAlign: 'center', fontWeight: '700' }}>
-        Actual PPS vs. Expected PPS 
-        <p>(<span style={{ color: 'green'}}>Green=Above</span>, <span style={{color: 'red'}}>Red=Below</span>)</p>
+        Actual PPS vs. Expected PPS
+        <p>(<span style={{ color: 'green' }}>Green=Above</span>, <span style={{ color: 'red' }}>Red=Below</span>)</p>
       </div>
-      <div style={{ display: 'flex', gap: '16px' }}>
-        <DivergingChart data={offDelta} title="Offense" />
-        <DivergingChart data={defDelta} title="Defense" />
+      <div className="shot-charts-row">
+        <div className="shot-chart-item">
+          <DivergingChart data={offDelta} title="Offense" />
+        </div>
+        <div className="shot-chart-item">
+          <DivergingChart data={defDelta} title="Defense" />
+        </div>
       </div>
 
       {/* Old table kept for reference:
@@ -2388,11 +2418,13 @@ function App() {
                 padding: '18px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px'
+                gap: '8px',
+                boxSizing: 'border-box',   // ADD THIS
+                width: '100%'
               }}>
               
                 <TeamProfileDashboard teamData={selectedTeamStats} systemRecord={selectedTeamStats.sysRecord || "0-0"} accentColor={accent} />
-                <div style={{ width: '100%', maxWidth: '850px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', border: `4px solid ${accent}`, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', padding: '20px 24px' }}>
+                <div style={{ width: '100%', maxWidth: '850px', margin: '0 auto', backgroundColor: 'white', borderRadius: '8px', border: `4px solid ${accent}`, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', padding: '20px 24px', boxSizing: 'border-box' }}>
                   <ShotDistributionCharts shotDistribution={selectedTeamStats.shotDistribution} shotPpsLog={selectedTeamStats.shotPpsLog} leagueAvgDist={leagueAvgDist} teamName={selectedTeamStats.teamName} />
                 </div>
                 {/*<div style={{ marginTop: '20px', textAlign: 'left' }}>
@@ -2449,48 +2481,63 @@ function App() {
                   </table>
                 </div> */}
 
-                <div style={{ width: 'fit-content', margin: '0 auto', overflowX: 'auto', maxWidth: '100%', textAlign: 'left', backgroundColor: 'white', borderRadius: '8px', border: `4px solid ${accent}`, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', padding: '5px 5px' }}>
+                <div style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  margin: '0 auto',
+                  textAlign: 'left',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: `4px solid ${accent}`,
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                  padding: '5px 5px',
+                  boxSizing: 'border-box'
+                }}>
                   <h3 style={{ marginBottom: '15px', textAlign: 'center' }}>Schedule</h3>
-                  <style>{`
-                    .schedule-table th, .schedule-table td { padding: 3px 4px; }
-                    .schedule-table thead th { line-height: 1.2; white-space: pre-line; }
-                  `}</style>
-                  <table className="play-table schedule-table" style={{ fontSize: '0.65rem', width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                    <colgroup>
-                      <col style={{ width: '48px' }} />
-                      <col style={{ width: '85px' }} />
-                      <col style={{ width: '48px' }} />
-                      <col style={{ width: '48px' }} />
-                      <col style={{ width: '42px' }} />
-                      <col style={{ width: '48px' }} />
-                      {[...Array(8)].map((_, i) => <col key={`off-${i}`} style={{ width: '35px' }} />)}
-                      {[...Array(8)].map((_, i) => <col key={`def-${i}`} style={{ width: '35px' }} />)}
-                    </colgroup>
-                    <thead>
-                      <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
-                        <th colSpan="6" style={{ fontSize: '1.0rem' }}>Game Summary</th>
-                        <th colSpan="8" style={{ backgroundColor: '#16a085', fontSize: '1.0rem' }}>Offensive Breakdown</th>
-                        <th colSpan="8" style={{ backgroundColor: '#2980b9', fontSize: '1.0rem' }}>Defensive Breakdown</th>
-                      </tr>
-                      <tr style={{ backgroundColor: '#ecf0f1', color: '#2c3e50', fontWeight: 'bold' }}>
-                        <th>Date</th><th>Opp.</th><th>{"Game\nResult"}</th><th>{"System\nResult"}</th><th>{"Shot\nMargin"}</th><th>Poss.</th>
-                        {['SQ Off', 'RQ Off', '6% Off', '4% Off', '3% Off', '1% Off', '7/11% Off', '0% Off'].map(h => <th key={h} style={{ backgroundColor: '#e8f8f5' }}>{h.replace(' ', '\n')}</th>)}
-                        {['SQ Def', 'RQ Def', '6% Def', '4% Def', '3% Def', '1% Def', '7/11% Def', '0% Def'].map(h => <th key={h} style={{ backgroundColor: '#eaf2f8' }}>{h.replace(' ', '\n')}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedTeamStats.schedule && selectedTeamStats.schedule.map((game, idx) => (
-                        <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                          <td>{new Date(game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td><td style={{ textAlign: 'center', fontWeight: '500' }}>{game.opponent}</td>
-                          <td style={{ fontWeight: 'bold', color: game.gameResult.startsWith('W') ? 'green' : 'red' }}>{game.gameResult}</td>
-                          <td style={{ color: game.systemResult.startsWith('W') ? 'green' : 'red' }}>{game.systemResult}</td>
-                          <td style={{ fontWeight: '500', color: game.shotMargin.startsWith('+') ? 'green' : 'red' }}>{game.shotMargin}</td><td>{game.possSummary}</td>
-                          <td style={{ backgroundColor: '#f4fbf9', fontWeight: '500', fontSize: '0.65rem' }}>{game.sqOff}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.rqOff}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off6}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem'}}>{game.off4}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off3}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off1}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off7_11}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off0}</td>
-                          <td style={{ backgroundColor: '#f5f9fc', fontWeight: '500', fontSize: '0.65rem' }}>{game.sqDef}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.rqDef}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def6}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def4}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def3}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def1}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def7_11}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def0}</td>
+
+                  {/* scrolling isolated to just the table */}
+                  <div style={{ overflowX: 'auto', width: '100%' }}>
+                    <style>{`
+                      .schedule-table th, .schedule-table td { padding: 3px 4px; }
+                      .schedule-table thead th { line-height: 1.2; white-space: pre-line; }
+                    `}</style>
+                    <table className="play-table schedule-table" style={{ fontSize: '0.65rem', width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                      <colgroup>
+                        <col style={{ width: '48px' }} />
+                        <col style={{ width: '85px' }} />
+                        <col style={{ width: '48px' }} />
+                        <col style={{ width: '48px' }} />
+                        <col style={{ width: '42px' }} />
+                        <col style={{ width: '48px' }} />
+                        {[...Array(8)].map((_, i) => <col key={`off-${i}`} style={{ width: '35px' }} />)}
+                        {[...Array(8)].map((_, i) => <col key={`def-${i}`} style={{ width: '35px' }} />)}
+                      </colgroup>
+                      <thead>
+                        <tr style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+                          <th colSpan="6" style={{ fontSize: '1.0rem' }}>Game Summary</th>
+                          <th colSpan="8" style={{ backgroundColor: '#16a085', fontSize: '1.0rem' }}>Offensive Breakdown</th>
+                          <th colSpan="8" style={{ backgroundColor: '#2980b9', fontSize: '1.0rem' }}>Defensive Breakdown</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        <tr style={{ backgroundColor: '#ecf0f1', color: '#2c3e50', fontWeight: 'bold' }}>
+                          <th>Date</th><th>Opp.</th><th>{"Game\nResult"}</th><th>{"System\nResult"}</th><th>{"Shot\nMargin"}</th><th>Poss.</th>
+                          {['SQ Off', 'RQ Off', '6% Off', '4% Off', '3% Off', '1% Off', '7/11% Off', '0% Off'].map(h => <th key={h} style={{ backgroundColor: '#e8f8f5' }}>{h.replace(' ', '\n')}</th>)}
+                          {['SQ Def', 'RQ Def', '6% Def', '4% Def', '3% Def', '1% Def', '7/11% Def', '0% Def'].map(h => <th key={h} style={{ backgroundColor: '#eaf2f8' }}>{h.replace(' ', '\n')}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedTeamStats.schedule && selectedTeamStats.schedule.map((game, idx) => (
+                          <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                            <td>{new Date(game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td><td style={{ textAlign: 'center', fontWeight: '500' }}>{game.opponent}</td>
+                            <td style={{ fontWeight: 'bold', color: game.gameResult.startsWith('W') ? 'green' : 'red' }}>{game.gameResult}</td>
+                            <td style={{ color: game.systemResult.startsWith('W') ? 'green' : 'red' }}>{game.systemResult}</td>
+                            <td style={{ fontWeight: '500', color: game.shotMargin.startsWith('+') ? 'green' : 'red' }}>{game.shotMargin}</td><td>{game.possSummary}</td>
+                            <td style={{ backgroundColor: '#f4fbf9', fontWeight: '500', fontSize: '0.65rem' }}>{game.sqOff}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.rqOff}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off6}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem'}}>{game.off4}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off3}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off1}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off7_11}</td><td style={{ backgroundColor: '#f4fbf9', fontSize: '0.65rem' }}>{game.off0}</td>
+                            <td style={{ backgroundColor: '#f5f9fc', fontWeight: '500', fontSize: '0.65rem' }}>{game.sqDef}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.rqDef}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def6}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def4}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def3}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def1}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def7_11}</td><td style={{ backgroundColor: '#f5f9fc', fontSize: '0.65rem' }}>{game.def0}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
               );
@@ -2533,22 +2580,18 @@ function App() {
         {/* ========================================================= */}
         {activeTab === 'System' && systemStats && (
           <section className="systems-tab-container" style={{ maxWidth: '1400px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-            <h1>Shot Quality Scoring System</h1>
-            <h2 style={{marginBottom: '24px', fontSize: '1.0rem'}}>A Contextual Expected Value Framework for Comprehensive Basketball Evaluation and Decision-Making</h2>
+            <h1 style={{fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)'}}>Shot Quality Scoring System</h1>
+            <h2 style={{marginBottom: '24px', fontSize: 'clamp(0.85rem, 3vw, 1.0rem)', fontFamily: 'system-ui, -apple-system, sans-serif'}}>A Contextual Expected Value Framework for Comprehensive Basketball Evaluation and Decision-Making</h2>
             {/*<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>*/}
-
-            
-            
-            
 
             <div style={{ backgroundColor: '#2c3e50', color: '#fff', padding: '30px 20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', textAlign: 'center', borderBottom: '6px solid #2980b9' }}>
               <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#bdc3c7', fontWeight: 'bold' }}>
                 Overall Accuracy
               </span>
-              <h2 style={{ fontSize: '2.8rem', margin: '12px 0', color: '#fff', fontWeight: '700', lineHeight: '1' }}>
+              <h2 style={{ fontSize: '2.8rem', margin: '6px 0', color: '#fff', fontWeight: '700', lineHeight: '1' }}>
                 {systemStats.standard.pct}% ({systemStats.standard.count}/{systemStats.total})
               </h2>
-              <h3 style={{ fontSize: '1.0rem', margin: '12px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
+              <h3 style={{ fontSize: '1.0rem', margin: '6px 0', color: '#fff', fontWeight: '800', lineHeight: '1' }}>
                 Projected Record: {Math.round((systemStats.standard.count / systemStats.total) * 28)}-{28-Math.round((systemStats.standard.count / systemStats.total) * 28)}
               </h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: '#ecf0f1', opacity: 0.95 }}>
@@ -2600,7 +2643,7 @@ function App() {
             </div>
 
             {/* SECTION HEADER BLOCK */}
-            <div style={{ paddingTop: '25px', borderBottom: '1px solid #e2e8f0', marginBottom: '30px' }}>
+            <div style={{ paddingTop: '45px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0', marginBottom: '30px' }}>
               <h2 style={{ margin: 0, color: '#2c3e50', fontSize: '1.6rem', fontWeight: '700' }}>
                 Model Validation
               </h2>
@@ -2651,7 +2694,11 @@ function App() {
             
             {/* SCATTER PLOT INJECTED HERE AT THE TOP OF THE SYSTEM VIEW */}
             <TeamPerformanceScatterPlot systemData={systemStats.teamTable} />
+            <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#2c3e50' }}>
+              Team Performance vs. System Breakdown
+            </h2>
             <TeamStatStrip teamTable={systemStats.teamTable} />
+            
             <TeamPerformanceCards teamTable={systemStats.teamTable} />
 
             {/*<TeamLollipopChart teamTable={systemStats.teamTable} />*/}
