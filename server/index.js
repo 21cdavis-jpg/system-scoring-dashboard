@@ -1,28 +1,28 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
-
+ 
 const app = express();
 const PORT = process.env.PORT || 5000
 const path = require('path');
 const basicAuth = require('express-basic-auth');
-
+ 
 app.use(cors({
     origin: ['http://localhost:5173', 'https://your-live-cloudflare-domain.com'],
     credentials: true
 }));
 app.use(express.json());
-
+ 
 app.use(basicAuth({
     users: { 'System_Scoring': 'Hunt_6s' }, // Replace with your preferred username and password
     challenge: true, // This forces the browser to open the native login prompt box
     unauthorizedResponse: 'Unauthorized Access. This system is private.'
 }));
-
+ 
 app.use(express.static(path.join(__dirname, '../client/dist')));
-
+ 
 app.use('/assets', express.static(path.join(__dirname, '../client/dist/assets')));
-
+ 
 const db = new sqlite3.Database(path.resolve(__dirname, 'sports.db'), (err) => {
     if (err) {
         console.error("Database connection failure:", err.message);
@@ -30,7 +30,7 @@ const db = new sqlite3.Database(path.resolve(__dirname, 'sports.db'), (err) => {
         console.log('Connected to the sports database at absolute path:', path.resolve(__dirname, 'sports.db'));
     }
 });
-
+ 
 // HELPER: Move this to the top so all routes can see it
 const parseSequence = (seq) => {
     if (!seq) return null;
@@ -43,7 +43,7 @@ const parseSequence = (seq) => {
     }));
     return { rebounds, events, lastQuality: events.length > 0 ? events[events.length - 1].quality : 0 };
 };
-
+ 
 const calculateMetrics = (rows, gamesPlayed) => {
     let stats = { 
         system: 0, shots: 0, totalQual: 0, stintQual: 0, poss: 0, 
@@ -59,7 +59,7 @@ const calculateMetrics = (rows, gamesPlayed) => {
             
             // Track FT Rebounds (e.g., sequence starts with '/')
             if (row.system_sequence.startsWith('/')) stats.ftReb++;
-
+ 
             p.events.forEach((e, idx) => {
                 stats.stintQual += e.quality;
                 if (e.type === 'shot') {
@@ -76,7 +76,7 @@ const calculateMetrics = (rows, gamesPlayed) => {
             });
         }
     });
-
+ 
     return {
         ...stats,
         sysG: gamesPlayed > 0 ? (stats.system / gamesPlayed).toFixed(1) : "0.0",
@@ -90,21 +90,21 @@ const calculateMetrics = (rows, gamesPlayed) => {
         result_q: stats.poss > 0 ? (stats.system / stats.poss).toFixed(2) : "0.00"
     };
 };
-
+ 
 app.get('/api/games', (req, res) => {
     db.all("SELECT * FROM games ORDER BY date DESC", [], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
         res.json(rows);
     });
 });
-
+ 
 app.get('/api/games/:id/plays', (req, res) => {
     db.all("SELECT * FROM possessions WHERE game_id = ? ORDER BY possession_id ASC", [req.params.id], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
         res.json(rows);
     });
 });
-
+ 
 app.get('/api/stats/:teamName', (req, res) => {
     const team = req.params.teamName;
     const sql = `
@@ -112,17 +112,17 @@ app.get('/api/stats/:teamName', (req, res) => {
         FROM possessions p 
         JOIN games g ON p.game_id = g.game_id 
         WHERE g.home_team = ? OR g.away_team = ?`;
-
+ 
     db.all(sql, [team, team], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
         if (!rows || rows.length === 0) return res.json({ teamName: team, record: "0-0", schedule: [], shotDistribution: { offense: [], defense: [] }, shotPpsLog: { offense: [], defense: [] } });
-
+ 
         const gameIds = [...new Set(rows.map(r => r.game_id))];
         const gamesPlayed = gameIds.length;
         let wins = 0;
         let losses = 0;
         let sysWins = 0, sysLosses = 0;
-
+ 
         // --- SURGICAL ADDITION START: Build Schedule Log Array ---
         const schedule = gameIds.map(id => {
             const gameRows = rows.filter(r => r.game_id === id);
@@ -133,18 +133,18 @@ app.get('/api/stats/:teamName', (req, res) => {
             const teamScore = isHome ? gameInfo.home_score : gameInfo.away_score;
             const oppScore = isHome ? gameInfo.away_score : gameInfo.home_score;
             const gameResult = teamScore > oppScore ? `W ${teamScore}-${oppScore}` : `L ${teamScore}-${oppScore}`;
-
+ 
             const sCounts = { offense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 }, defense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 } };
             const sTotals = { offense: { system: 0, shots: 0, sQual: 0, poss: 0 }, defense: { system: 0, shots: 0, sQual: 0, poss: 0 } };
             // Per-game, per-shot-type count/points — tracks 7 and 11 separately so they can be pooled correctly below.
             const sPpsTypes = { offense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 }, defense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 } };
             const sPpsCounts = { offense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 }, defense: { 6:0, 4:0, 7:0, 11:0, 3:0, 1:0, 0:0 } };
-
+ 
             gameRows.forEach(row => {
                 if (!row.system_sequence || row.system_sequence.trim() === "") return;
                 const isOffense = (row.team_type === 'Home' && isHome) || (row.team_type === 'Away' && !isHome);
                 const side = isOffense ? 'offense' : 'defense';
-
+ 
                 sTotals[side].poss++;
                 const segments = row.system_sequence.split('/').filter(s => s !== "");
                 
@@ -167,7 +167,7 @@ app.get('/api/stats/:teamName', (req, res) => {
                     }
                 });
             });
-
+ 
             // Merge 7+11 into one pooled bucket (total points / total shots), expected PPS = 1.75.
             // Order matches SHOT_TYPES on the frontend: [7_11, 6, 4, 3, 1, 0]
             const pooled711Counts = { offense: sPpsCounts.offense[7] + sPpsCounts.offense[11], defense: sPpsCounts.defense[7] + sPpsCounts.defense[11] };
@@ -190,25 +190,25 @@ app.get('/api/stats/:teamName', (req, res) => {
                     sPpsCounts.defense[0] > 0 ? +(sPpsTypes.defense[0] / sPpsCounts.defense[0]).toFixed(3) : null,
                 ]
             };
-
+ 
             const systemResult = sTotals.offense.system > sTotals.defense.system 
                 ? `W ${sTotals.offense.system.toFixed(0)}-${sTotals.defense.system.toFixed(0)}` 
                 : `L ${sTotals.offense.system.toFixed(0)}-${sTotals.defense.system.toFixed(0)}`;
-
+ 
             const shotMarginRaw = sTotals.offense.shots - sTotals.defense.shots;
             const shotMargin = shotMarginRaw >= 0 ? `+${shotMarginRaw}` : `${shotMarginRaw}`;
-
+ 
             const getSidePct = (side, type) => {
                 const total = Object.values(sCounts[side]).reduce((a, b) => a + b, 0);
                 return total > 0 ? ((sCounts[side][type] / total) * 100).toFixed(1) + '%' : '0.0%';
             };
-
+ 
             const getSideCombinedPct = (side, types) => {
                 const total = Object.values(sCounts[side]).reduce((a, b) => a + b, 0);
                 const combinedCount = types.reduce((sum, t) => sum + (sCounts[side][t] || 0), 0);
                 return total > 0 ? ((combinedCount / total) * 100).toFixed(1) + '%' : '0.0%';
             };
-
+ 
             return {
                 date: gameInfo.date,
                 opponent: oppDisplay,
@@ -236,7 +236,7 @@ app.get('/api/stats/:teamName', (req, res) => {
             };
         }).sort((a, b) => new Date(b.date) - new Date(a.date));
         // --- SURGICAL ADDITION END ---
-
+ 
         gameIds.forEach(id => {
             const game = rows.find(r => r.game_id === id);
             if (game.home_team === team) {
@@ -246,7 +246,7 @@ app.get('/api/stats/:teamName', (req, res) => {
                 if (game.away_score > game.home_score) wins++;
                 else losses++;
             }
-
+ 
             // Mirror system-accuracy: accumulate by Home/Away position, then compare
             let homeSys = 0, awaySys = 0;
             const thisGameRows = rows.filter(r => r.game_id === id);
@@ -258,36 +258,36 @@ app.get('/api/stats/:teamName', (req, res) => {
                 if (row.team_type === 'Home') homeSys += score;
                 else awaySys += score;
             });
-
+ 
             const isHome = game.home_team === team;
             const teamSys = isHome ? homeSys : awaySys;
             const oppSys  = isHome ? awaySys : homeSys;
             if (teamSys > oppSys) sysWins++;
             else if (oppSys > teamSys) sysLosses++;
         });
-
+ 
         const offRows = rows.filter(r => (r.team_type === 'Home' && r.home_team === team) || (r.team_type === 'Away' && r.away_team === team));
         const defRows = rows.filter(r => (r.team_type === 'Home' && r.away_team === team) || (r.team_type === 'Away' && r.home_team === team));
-
+ 
         const off = calculateMetrics(offRows, gamesPlayed);
         const def = calculateMetrics(defRows, gamesPlayed);
-
+ 
         // Bucket order: 7/11 (merged), 6, 4, 3, 1, 0 — highest to lowest expected PPS.
         // Type 11 is tracked separately in dist.stats but merged before sending to the frontend.
         const shotTypes = [7, 11, 6, 4, 3, 1, 0];
-
+ 
         // Roll per-game gamePpsByType (already in merged bucket order) into per-type arrays for the frontend.
         const shotPpsLog = {
             offense: [0,1,2,3,4,5].map(i => schedule.map(g => g.gamePpsByType.offense[i]).filter(v => v !== null)),
             defense: [0,1,2,3,4,5].map(i => schedule.map(g => g.gamePpsByType.defense[i]).filter(v => v !== null))
         };
-
+ 
         const dist = { offense: { totalCount: 0, stats: {} }, defense: { totalCount: 0, stats: {} } };
         shotTypes.forEach(t => {
             dist.offense.stats[t] = { count: 0, points: 0 };
             dist.defense.stats[t] = { count: 0, points: 0 };
         });
-
+ 
         rows.forEach(row => {
             if (!row.system_sequence) return;
             const isOff = (row.team_type === 'Home' && row.home_team === team) || (row.team_type === 'Away' && row.away_team === team);
@@ -302,7 +302,7 @@ app.get('/api/stats/:teamName', (req, res) => {
                 }
             });
         });
-
+ 
         res.json({
             teamName: team,
             record: `${wins}-${losses}`,
@@ -336,7 +336,7 @@ app.get('/api/stats/:teamName', (req, res) => {
         });
     });
 });
-
+ 
 // Returns the average shot distribution (% of shots per merged bucket) across all teams.
 // Each team's percentages are computed independently then averaged, so high-volume teams
 // don't skew the league profile.
@@ -346,16 +346,16 @@ app.get('/api/league-averages', (req, res) => {
         FROM possessions p
         JOIN games g ON p.game_id = g.game_id
         WHERE p.system_sequence IS NOT NULL AND p.system_sequence != ''`;
-
+ 
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
-
+ 
         const teamDists = {};
         const getTeamDist = (name) => {
             if (!teamDists[name]) teamDists[name] = { counts: { '7_11': 0, 6: 0, 4: 0, 3: 0, 1: 0, 0: 0 }, total: 0 };
             return teamDists[name];
         };
-
+ 
         rows.forEach(row => {
             const team = row.team_type === 'Home' ? row.home_team : row.away_team;
             const d = getTeamDist(team);
@@ -369,20 +369,20 @@ app.get('/api/league-averages', (req, res) => {
                 }
             });
         });
-
+ 
         const teams = Object.values(teamDists);
         if (teams.length === 0) return res.json([]);
-
+ 
         const buckets = ['7_11', 6, 4, 3, 1, 0];
         const avg = buckets.map(b => {
             const sum = teams.reduce((acc, t) => acc + (t.total > 0 ? (t.counts[b] / t.total) * 100 : 0), 0);
             return { type: b === '7_11' ? '7/11' : b, pct: parseFloat((sum / teams.length).toFixed(1)) };
         });
-
+ 
         res.json(avg);
     });
 });
-
+ 
 app.get('/api/games/:id/summary', (req, res) => {
     const { id } = req.params;
     // CHANGED: Added home_score and away_score to the SELECT statement
@@ -391,12 +391,12 @@ app.get('/api/games/:id/summary', (req, res) => {
         FROM possessions p 
         JOIN games g ON p.game_id = g.game_id 
         WHERE p.game_id = ? AND p.system_sequence != ''`;
-
+ 
     db.all(sql, [id], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
-
+ 
         if (rows.length === 0) return res.json({ Home: {}, Away: {} });
-
+ 
         // KEPT: Initializing the summary structure with team names and scores
         const summary = {
             Home: { 
@@ -416,7 +416,7 @@ app.get('/api/games/:id/summary', (req, res) => {
                 shotPoints: {} 
             }
         };
-
+ 
         const shotTypes = [6, 4, 7, 11, 3, 1, 0];
         ['Home', 'Away'].forEach(side => {
             shotTypes.forEach(t => {
@@ -424,15 +424,15 @@ app.get('/api/games/:id/summary', (req, res) => {
                 summary[side].shotPoints[t] = 0;
             });
         });
-
+ 
         // ADDED: Detailed event tracking loop
         rows.forEach(row => {
             const side = row.team_type; // 'Home' or 'Away'
             if (!summary[side] || !row.system_sequence) return;
-
+ 
             summary[side].stats.poss++; 
             summary[side].stats.points += (row.points || 0);
-
+ 
             const segments = row.system_sequence.split('/').filter(s => s !== "");
             
             segments.forEach((seg, idx) => {
@@ -453,7 +453,7 @@ app.get('/api/games/:id/summary', (req, res) => {
                 }
             });
         });
-
+ 
         // ADDED: Formatting helper to calculate the specific percentages and execution rates
         const finalize = (side) => {
             const t = summary[side];
@@ -461,7 +461,7 @@ app.get('/api/games/:id/summary', (req, res) => {
             
             const getPct = (type) => totalEvents > 0 ? ((t.shotCounts[type] / totalEvents) * 100).toFixed(1) + '%' : '0.0%';
             const getExec = (type) => t.shotCounts[type] > 0 ? (t.shotPoints[type] / t.shotCounts[type]).toFixed(3) : '0.000';
-
+ 
             return {
                 name: t.name,
                 score: t.score,
@@ -492,11 +492,11 @@ app.get('/api/games/:id/summary', (req, res) => {
                 }
             };
         };
-
+ 
         res.json({ Home: finalize('Home'), Away: finalize('Away') });
     });
 });
-
+ 
 app.get('/api/system-accuracy', (req, res) => {
     // Added p.points to the query
     const sql =  `SELECT g.*, p.team_type, p.system_sequence, p.points  
@@ -504,7 +504,7 @@ app.get('/api/system-accuracy', (req, res) => {
     
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(400).json({ error: err.message });
-
+ 
         const gamesMap = {};
         const teamStats = {}; // Tracking per-team metrics
         const shotStats = {
@@ -516,7 +516,7 @@ app.get('/api/system-accuracy', (req, res) => {
             11: { totalShots: 0, totalPoints: 0, pointList: [] },
             0: { totalShots: 0, totalPoints: 0, pointList: [] }
         };
-
+ 
         rows.forEach(row => {
             if (!gamesMap[row.game_id]) {
                 gamesMap[row.game_id] = { 
@@ -528,7 +528,7 @@ app.get('/api/system-accuracy', (req, res) => {
                     away_sys: 0 
                 };
             }
-
+ 
             if (row.system_sequence) {
                 const teamName = row.team_type === 'Home' ? row.home_team : row.away_team;
                 
@@ -540,7 +540,7 @@ app.get('/api/system-accuracy', (req, res) => {
                         totalShots: 0, totalShotQual: 0, totalResultQual: 0, totalPoss: 0 
                     };
                 }
-
+ 
                 const segments = row.system_sequence.split('/').filter(s => s !== "");
                 const shotTypes = segments.map(s => Math.floor(parseInt(s) / 10));
                 
@@ -553,7 +553,7 @@ app.get('/api/system-accuracy', (req, res) => {
                         teamStats[teamName].totalShots++;
                         teamStats[teamName].totalShotQual += type;
                     }
-
+ 
                     if (shotStats[type] !== undefined) {
                         shotStats[type].totalShots++;
                         const outcome = (idx === lastIndex) ? pts : 0;
@@ -561,11 +561,11 @@ app.get('/api/system-accuracy', (req, res) => {
                         shotStats[type].pointList.push(outcome);
                     }
                 });
-
+ 
                 // Possession tracking for PPP
                 teamStats[teamName].totalPoss++;
                 teamStats[teamName].totalPoints += (row.points || 0);
-
+ 
                 const p = parseSequence(row.system_sequence);
                 if (p) {
                     const score = p.lastQuality + p.rebounds;
@@ -575,28 +575,28 @@ app.get('/api/system-accuracy', (req, res) => {
                 }
             }
         });
-
+ 
         // Calculate Win/Loss and Matches per Team
         Object.values(gamesMap).forEach(g => {
             const actualWinner = g.home_actual > g.away_actual ? g.home_team : g.away_team;
             const systemWinner = g.home_sys > g.away_sys ? g.home_team : g.away_team;
             const isMatch = actualWinner === systemWinner;
-
+ 
             // Actual Records
             if (g.home_actual > g.away_actual) { teamStats[g.home_team].wins++; teamStats[g.away_team].losses++; }
             else { teamStats[g.away_team].wins++; teamStats[g.home_team].losses++; }
-
+ 
             // System Records
             if (g.home_sys > g.away_sys) { teamStats[g.home_team].sysWins++; teamStats[g.away_team].sysLosses++; }
             else { teamStats[g.away_team].sysWins++; teamStats[g.home_team].sysLosses++; }
-
+ 
             // Matches
             [g.home_team, g.away_team].forEach(name => {
                 if (isMatch) teamStats[name].matched++;
                 else teamStats[name].mismatched++;
             });
         });
-
+ 
         // Format Team Accuracy Table
         const teamTable = Object.keys(teamStats).map(name => {
             const s = teamStats[name];
@@ -604,7 +604,7 @@ app.get('/api/system-accuracy', (req, res) => {
             const actPPS = s.totalShots > 0 ? s.totalPoints / s.totalShots : 0;
             const expPPP = s.totalPoss > 0 ? (s.totalResultQual / 4) / s.totalPoss : 0;
             const actPPP = s.totalPoss > 0 ? s.totalPoints / s.totalPoss : 0;
-
+ 
             return {
                 name,
                 record: `${s.wins}-${s.losses}`,
@@ -620,25 +620,40 @@ app.get('/api/system-accuracy', (req, res) => {
                 pppDiff: (actPPP - expPPP).toFixed(2)
             };
         });
-
+ 
         const shotTable = [6, 4, 3, 1, 7, 11, 0].map(type => {
             const stats = shotStats[type];
-            const actual = stats.totalShots > 0 ? (stats.totalPoints / stats.totalShots) : 0;
+            const n = stats.totalShots;
+            const actual = n > 0 ? (stats.totalPoints / n) : 0;
             const expected = type / 4;
+ 
+            // Relative Std Dev (based on expected) — existing metric
             let rsd = 0;
             if (stats.pointList.length > 1 && actual > 0) {
-                const variance = stats.pointList.reduce((acc, p) => acc + Math.pow(p - expected, 2), 0) / (stats.pointList.length);
-                rsd = (Math.sqrt(variance) / expected);
+                const varianceExpected = stats.pointList.reduce((acc, p) => acc + Math.pow(p - expected, 2), 0) / (stats.pointList.length);
+                rsd = (Math.sqrt(varianceExpected) / expected);
             }
+ 
+            // Z-score (based on actual mean) — how many SEs Actual PPS is from Expected PPS
+            let zScore = null;
+            if (n > 1) {
+                const varianceActual = stats.pointList.reduce((acc, p) => acc + Math.pow(p - actual, 2), 0) / (stats.pointList.length - 1);
+                const stdDevActual = Math.sqrt(varianceActual);
+                const stdError = stdDevActual / Math.sqrt(stats.pointList.length);
+                zScore = stdError > 0 ? (actual - expected) / stdError : 0;
+            }
+ 
             return {
                 type: type + "'s",
+                n,
                 actual: actual.toFixed(2),
                 expected: expected.toFixed(2),
                 diff: (actual - expected).toFixed(2),
-                rsd: (rsd * 100).toFixed(1) + "%"
+                rsd: (rsd * 100).toFixed(1) + "%",
+                zScore: zScore === null ? null : zScore.toFixed(2)
             };
         });
-
+ 
         const games = Object.values(gamesMap);
         let matches = 0, conservative = 0, aggressive = 0;
         games.forEach(g => {
@@ -648,7 +663,7 @@ app.get('/api/system-accuracy', (req, res) => {
             if (isMatch && diff > 5) conservative++;
             if (isMatch || (!isMatch && diff <= 5)) aggressive++;
         });
-
+ 
         const rawDifferentials = Object.values(gamesMap).map(g => {
             const actualWinner = g.home_actual > g.away_actual ? 'Home' : 'Away';
             const systemWinner = g.home_sys > g.away_sys ? 'Home' : 'Away';
@@ -658,14 +673,14 @@ app.get('/api/system-accuracy', (req, res) => {
             const actualWinnerSysScore = actualWinner === 'Home' ? g.home_sys : g.away_sys;
             const actualLoserSysScore = actualWinner === 'Home' ? g.away_sys : g.home_sys;
             const systemDiff = actualWinnerSysScore - actualLoserSysScore;
-
+ 
             return {
                 gameId: g.game_id,
                 systemDiff: systemDiff,
                 systemCorrect: actualWinner === systemWinner
             };
         });
-
+ 
         res.json({
             total: games.length,
             standard: { count: matches, pct: games.length > 0 ? ((matches / games.length) * 100).toFixed(1) : 0 },
@@ -677,7 +692,7 @@ app.get('/api/system-accuracy', (req, res) => {
         });
     });
 });
-
+ 
 // ==========================================
 // LEAGUE LEADERBOARDS ENDPOINT
 // ==========================================
@@ -700,18 +715,18 @@ app.get('/api/league/summary', (req, res) => {
             
         db.all(posSql, [], (err, possessionsRows) => {
             if (err) return res.status(400).json({ error: err.message });
-
+ 
             const uniqueTeams = new Set();
             gamesRows.forEach(g => {
                 if (g.home_team) uniqueTeams.add(g.home_team);
                 if (g.away_team) uniqueTeams.add(g.away_team);
             });
-
+ 
             const recordsMap = {};
             uniqueTeams.forEach(t => {
                 recordsMap[t] = { wins: 0, losses: 0, sysWins: 0, sysLosses: 0, gamesPlayed: 0 };
             });
-
+ 
             const gameScoresMap = {};
             possessionsRows.forEach(row => {
                 if (!gameScoresMap[row.game_id]) {
@@ -725,21 +740,21 @@ app.get('/api/league/summary', (req, res) => {
                     gameScoresMap[row.game_id][row.team_type].sysScore += (p.lastQuality + p.rebounds);
                 }
             });
-
+ 
             gamesRows.forEach(g => {
                 const h = g.home_team;
                 const a = g.away_team;
                 if (!recordsMap[h] || !recordsMap[a]) return;
-
+ 
                 recordsMap[h].gamesPlayed++;
                 recordsMap[a].gamesPlayed++;
-
+ 
                 if (g.home_score > g.away_score) {
                     recordsMap[h].wins++; recordsMap[a].losses++;
                 } else {
                     recordsMap[a].wins++; recordsMap[h].losses++;
                 }
-
+ 
                 const sysGame = gameScoresMap[g.game_id];
                 if (sysGame) {
                     if (sysGame.Home.sysScore > sysGame.Away.sysScore) {
@@ -749,18 +764,18 @@ app.get('/api/league/summary', (req, res) => {
                     }
                 }
             });
-
+ 
             const leagueSummary = Array.from(uniqueTeams).map(team => {
                 const rec = recordsMap[team];
                 const gp = rec.gamesPlayed || 1;
-
+ 
                 // 1. Filter possessions relative to the active team
                 const offRows = possessionsRows.filter(r => (r.team_type === 'Home' && r.home_team === team) || (r.team_type === 'Away' && r.away_team === team));
                 const defRows = possessionsRows.filter(r => (r.team_type === 'Home' && r.away_team === team) || (r.team_type === 'Away' && r.home_team === team));
-
+ 
                 const offMetrics = calculateMetrics(offRows, gp);
                 const defMetrics = calculateMetrics(defRows, gp);
-
+ 
                 // 2. Shot margin calculations matching Team tab formulas
                 const totalOffShots = offMetrics.shots || 0;
                 const totalDefShots = defMetrics.shots || 0;
@@ -768,13 +783,13 @@ app.get('/api/league/summary', (req, res) => {
                 
                 const shotsGained100Off = offMetrics.poss > 0 ? (100 * ((offMetrics.oRebs + offMetrics.ftReb) - offMetrics.turnovers) / offMetrics.poss) : 0;
                 const shotsGained100Def = defMetrics.poss > 0 ? (100 * (defMetrics.turnovers - (defMetrics.oRebs + defMetrics.ftReb)) / defMetrics.poss) : 0;
-
+ 
                 // 3. Complete Shot type % and PPS distribution calculations
                 const getShotTypeData = (rows) => {
                     const counts = { 6: 0, 4: 0, 7: 0, 11: 0, 3: 0, 1: 0, 0: 0 };
                     const pointsMap = { 6: 0, 4: 0, 7: 0, 11: 0, 3: 0, 1: 0, 0: 0 };
                     let totalShots = 0;
-
+ 
                     rows.forEach(row => {
                         if (!row.system_sequence) return;
                         const segments = row.system_sequence.split('/').filter(s => s !== "");
@@ -794,7 +809,7 @@ app.get('/api/league/summary', (req, res) => {
                             }
                         }
                     });
-
+ 
                     const shotTypes = [6, 4, 7, 3, 1, 0];
                     return shotTypes.map(t => {
                         let pctValue = 0;
@@ -808,7 +823,7 @@ app.get('/api/league/summary', (req, res) => {
                         } else {
                             pctValue = totalShots > 0 ? (counts[t] / totalShots) * 100 : 0;
                         }
-
+ 
                         let ppsValue = 0;
                         if (t === 7) {
                             const combinedCount = counts[7] + counts[11];
@@ -817,14 +832,14 @@ app.get('/api/league/summary', (req, res) => {
                         } else {
                             ppsValue = counts[t] > 0 ? pointsMap[t] / counts[t] : 0;
                         }
-
+ 
                         return {
                             pct: pctValue.toFixed(1) + '%',
                             pps: ppsValue.toFixed(2)
                         };
                     });
                 };
-
+ 
                 return {
                     teamName: team,
                     record: `${rec.wins}-${rec.losses}`,
@@ -855,16 +870,16 @@ app.get('/api/league/summary', (req, res) => {
                     }
                 };
             });
-
+ 
             res.json(leagueSummary);
         });
     });
 });
-
+ 
 app.get('*catchall', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
 });
-
+ 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });

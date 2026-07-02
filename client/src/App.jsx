@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 import { 
@@ -302,7 +302,7 @@ function SortableLeagueTable({ data, columns, initialSortKey }) {
 // ==========================================
 // NEW SUB-COMPONENT: SECTION 1: EXECUTIVE MATCHUP SIDE-BY-SIDE
 // ==========================================
-const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
+const ExecutiveMatchup = ({ gameData }) => {
   if (!gameData) return null;
 
   const {
@@ -323,6 +323,10 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
   const homeShotMargin = homeShots - awayShots;
   const awayShotMargin = awayShots - homeShots;
 
+  const winProbability = predictWinProbability(
+    parseFloat(homeSQ) - parseFloat(awaySQ),
+    homeShotMargin
+  );
   // Paths pointing directly to your public assets folder
   const homeLogoSrc = `/MEC Logos/${homeTeam}.png`;
   const awayLogoSrc = `/MEC Logos/${awayTeam}.png`;
@@ -372,7 +376,7 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
           <div className="win-prob-track">
             <div className="win-prob-fill" style={{ width: `${winProbability}%`, background: homeAccent }} />
           </div>
-          <span style={{ color: homeAccent, fontWeight: 800 }}>{winProbability}%</span>
+          <span style={{ color: homeAccent, fontWeight: 800 }}>{winProbability.toFixed(1)}%</span>
         </div>
       </div>
 
@@ -410,7 +414,7 @@ const ExecutiveMatchup = ({ gameData, winProbability = 50 }) => {
           <div className="win-prob-track">
             <div className="win-prob-fill" style={{ width: `${100 - winProbability}%`, background: awayAccent }} />
           </div>
-          <span style={{ color: awayAccent, fontWeight: 800 }}>{(100 - winProbability)}%</span>
+          <span style={{ color: awayAccent, fontWeight: 800 }}>{(100 - winProbability).toFixed(1)}%</span>
         </div>
       </div>
     </div>
@@ -1811,6 +1815,94 @@ function TeamProfileDashboard({ teamData, systemRecord = "0-0", accentColor = "#
     </div>
   );
 }
+
+const WIN_PROB_MODEL = {
+  intercept: -0.0,           // model.intercept_[0]
+  coefs: [1.7156022442656316, 1.4103889624883197],         // model.coef_[0] -> [shotQualCoef, shotMarginCoef]
+  mean: [0.0, 0.0],          // scaler.mean_ -> [shotQualMean, shotMarginMean]
+  scale: [0.5128623094041632, 9.277059328646876]          // scaler.scale_ -> [shotQualStd, shotMarginStd]
+};
+
+function standardize(value, index) {
+  return (value - WIN_PROB_MODEL.mean[index]) / WIN_PROB_MODEL.scale[index];
+}
+
+function predictWinProbability(shotQualDiff, shotMarginDiff) {
+  const x1 = standardize(shotQualDiff, 0);
+  const x2 = standardize(shotMarginDiff, 1);
+
+  const z = WIN_PROB_MODEL.intercept
+    + WIN_PROB_MODEL.coefs[0] * x1
+    + WIN_PROB_MODEL.coefs[1] * x2;
+
+  const p = 1 / (1 + Math.exp(-z));
+  return p * 100;
+}
+
+function GameSearchCombobox({ gameData, onSelectGame }) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  const results = useMemo(() => {
+    const sorted = [...gameData].sort((a, b) => new Date(b.date) - new Date(a.date));
+    //if (!query.trim()) return sorted.slice(0, 15); // cap the default list
+    const q = query.toLowerCase();
+    return sorted.filter(g =>
+      g.date?.toLowerCase().includes(q) ||
+      g.home_team?.toLowerCase().includes(q) ||
+      g.away_team?.toLowerCase().includes(q)
+    );
+  }, [gameData, query]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handlePick = (game) => {
+    setQuery(`${game.date} - ${game.home_team} vs ${game.away_team}`);
+    setIsOpen(false);
+    onSelectGame(game.game_id);
+  };
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '300px', margin: '0 auto' }}>
+      <input
+        type="text"
+        placeholder="Search or select a game..."
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
+        onFocus={() => setIsOpen(true)}
+        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontWeight: '500', color: '#000' }}
+      />
+      {isOpen && results.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+          background: 'white', border: '1px solid #ccc', borderRadius: '6px',
+          maxHeight: '260px', overflowY: 'auto', marginTop: '4px', boxShadow: '0 4px 10px rgba(0,0,0,0.08)'
+        }}>
+          {results.map(game => (
+            <div
+              key={game.game_id}
+              onClick={() => handlePick(game)}
+              style={{ padding: '8px 10px', cursor: 'pointer', fontSize: '0.75rem', color: '#000' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+            >
+              {game.date} - {game.home_team} vs {game.away_team}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 // ==========================================
 // MAIN APP COMPONENT EXPORT
 // ==========================================
@@ -1830,6 +1922,19 @@ function App() {
   const [viewMode, setViewMode] = useState('coach'); 
   const [periodMetric, setPeriodMetric] = useState('systemScore'); 
   const [possessionMetric, setPossessionMetric] = useState('systemScore');
+  const [gameSearch, setGameSearch] = useState('');           // ADD THIS
+
+  const sortedFilteredGames = useMemo(() => {                 // AND THIS
+    const sorted = [...gameData].sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (!gameSearch.trim()) return sorted;
+
+    const q = gameSearch.toLowerCase();
+    return sorted.filter(g =>
+      g.date?.toLowerCase().includes(q) ||
+      g.home_team?.toLowerCase().includes(q) ||
+      g.away_team?.toLowerCase().includes(q)
+    );
+  }, [gameData, gameSearch]);
 
   useEffect(() => {
     if (activeTab === 'League') {
@@ -2136,19 +2241,11 @@ function App() {
         {/* ========================================================= */}
         {activeTab === 'Games' && (
           <section style={{ display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'center' }}>
-            
-            {/* Control Strip: Game Picker & Layout Toggle */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ width: '300px' }}>
-                <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontWeight: '500' }} onChange={(e) => { fetchPlays(e.target.value); fetchGameSummary(e.target.value); }}>
-                  <option value="">Select a Game</option>
-                  {gameData.map(game => (
-                    <option key={game.game_id} value={game.game_id}>
-                      {game.date} - {game.home_team} vs {game.away_team}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <GameSearchCombobox
+                gameData={gameData}
+                onSelectGame={(gameId) => { fetchPlays(gameId); fetchGameSummary(gameId); }}
+              />
               
               {/*plays.length > 0 && (
                 <button 
@@ -2166,7 +2263,7 @@ function App() {
                 <div className="coach-dashboard-layout" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                   <h3 style={{ margin: '0 0 5px 0', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', color: '#2c3e50' }}>Game Summary</h3>
                   {/* Section 1: Top Dashboard Grid */}
-                  <ExecutiveMatchup gameData={gameSummary} winProbability={62} />
+                  <ExecutiveMatchup gameData={gameSummary} />
 
                   {/* Sections 2 & 3: Pies & Execution Bars */}
                   <ShotDistributionAndExecution gameSummary={gameSummary} />
@@ -2676,19 +2773,36 @@ function App() {
                 <table className="play-table" style={{ fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#2c3e50', color: 'white', border: '1px solid #2c3e50' }}>
-                      <th>Shot Type</th><th>Actual PPS</th><th>Expected PPS</th><th>PPS Difference</th><th>Shot Variation</th>
+                      <th>Shot Type</th><th>Count</th><th>Actual PPS</th><th>Expected PPS</th><th>PPS Difference</th><th>Shot Variation</th><th>Z-Score</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {systemStats.shotTable.map((row, idx) => (
-                      <tr key={idx}>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #2c3e50' }}>{row.type}</td><td style={{border: '1px solid #2c3e50'}}>{row.actual}</td><td style={{border: '1px solid #2c3e50'}}>{row.expected}</td>
-                        <td style={{ color: parseFloat(row.diff) >= 0 ? 'green' : 'red', border: '1px solid #2c3e50' }}>{parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}</td><td style={{border: '1px solid #2c3e50'}}>{row.rsd}</td>
-                      </tr>
-                    ))}
+                    {systemStats.shotTable.map((row, idx) => {
+                      const z = row.zScore !== null && row.zScore !== undefined ? parseFloat(row.zScore) : null;
+                      // Only the 6s, 3s, 1s tiers get their PPS Difference highlighted green — these are the
+                      // tiers where "close to expectation" is the whole story. All others stay neutral text,
+                      // since their deviations carry separate context (see footnote).
+                      const coreTiers = ["6's", "3's", "1's"];
+                      const isCoreTier = coreTiers.includes(row.type);
+                      const diffColor = isCoreTier ? 'green' : 'inherit';
+                      return (
+                        <tr key={idx}>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f9f9f9', border: '1px solid #2c3e50' }}>{row.type}</td>
+                          <td style={{border: '1px solid #2c3e50'}}>{row.n}</td>
+                          <td style={{border: '1px solid #2c3e50'}}>{row.actual}</td>
+                          <td style={{border: '1px solid #2c3e50'}}>{row.expected}</td>
+                          <td style={{ color: diffColor, fontWeight: isCoreTier ? 600 : 400, border: '1px solid #2c3e50' }}>{parseFloat(row.diff) > 0 ? `+${row.diff}` : row.diff}</td>
+                          <td style={{border: '1px solid #2c3e50'}}>{row.rsd}</td>
+                          <td style={{ border: '1px solid #2c3e50' }}>{z === null ? '—' : (z > 0 ? `+${row.zScore}` : row.zScore)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+              <p style={{ fontSize: '0.78rem', color: '#7f8c8d', fontStyle: 'italic' }}>
+                *Further investigation into any differences can be found in the analyses below or in the Research tab.
+              </p>
             </div>
             
             
