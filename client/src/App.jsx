@@ -1922,19 +1922,9 @@ function App() {
   const [viewMode, setViewMode] = useState('coach'); 
   const [periodMetric, setPeriodMetric] = useState('systemScore'); 
   const [possessionMetric, setPossessionMetric] = useState('systemScore');
-  const [gameSearch, setGameSearch] = useState('');           // ADD THIS
-
-  const sortedFilteredGames = useMemo(() => {                 // AND THIS
-    const sorted = [...gameData].sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (!gameSearch.trim()) return sorted;
-
-    const q = gameSearch.toLowerCase();
-    return sorted.filter(g =>
-      g.date?.toLowerCase().includes(q) ||
-      g.home_team?.toLowerCase().includes(q) ||
-      g.away_team?.toLowerCase().includes(q)
-    );
-  }, [gameData, gameSearch]);
+  const sortedGames = useMemo(() => {
+    return [...gameData].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [gameData]);
 
   useEffect(() => {
     if (activeTab === 'League') {
@@ -2242,10 +2232,27 @@ function App() {
         {activeTab === 'Games' && (
           <section style={{ display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'center' }}>
             <div>
-              <GameSearchCombobox
-                gameData={gameData}
-                onSelectGame={(gameId) => { fetchPlays(gameId); fetchGameSummary(gameId); }}
-              />
+              <select
+                onChange={(e) => { fetchPlays(e.target.value); fetchGameSummary(e.target.value); }}
+                style={{
+                  width: '300px',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  fontWeight: '500',
+                  color: '#000',
+                  margin: '0 auto',
+                  display: 'block',
+                  textAlign: 'center'
+                }}
+              >
+                <option value="">Select a Game</option>
+                {sortedGames.map(game => (
+                  <option key={game.game_id} value={game.game_id}>
+                    {game.date} - {game.home_team} vs {game.away_team}
+                  </option>
+                ))}
+              </select>
               
               {/*plays.length > 0 && (
                 <button 
@@ -2261,7 +2268,7 @@ function App() {
               viewMode === 'coach' ? (
                 /* NEW INTERACTIVE VIEW HOOKS */
                 <div className="coach-dashboard-layout" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                  <h3 style={{ margin: '0 0 5px 0', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', color: '#2c3e50' }}>Game Summary</h3>
+                  <h3 style={{ margin: '0 0 5px 0', marginTop: '15px', marginBottom: '15px', textAlign: 'center', fontSize: '1.7rem', fontWeight: 'bold', color: '#2c3e50' }}>Game Summary</h3>
                   {/* Section 1: Top Dashboard Grid */}
                   <ExecutiveMatchup gameData={gameSummary} />
 
@@ -2681,7 +2688,7 @@ function App() {
             <h2 style={{marginBottom: '24px', fontSize: 'clamp(0.85rem, 3vw, 1.0rem)', fontFamily: 'system-ui, -apple-system, sans-serif'}}>A Contextual Expected Value Framework for Comprehensive Basketball Evaluation and Decision-Making</h2>
             {/*<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>*/}
 
-            <div style={{ backgroundColor: '#2c3e50', color: '#fff', padding: '30px 20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', textAlign: 'center', borderBottom: '6px solid #2980b9' }}>
+            <div style={{ backgroundColor: '#2c3e50', color: '#fff', padding: '10px 5px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', textAlign: 'center', borderBottom: '6px solid #2980b9' }}>
               <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#bdc3c7', fontWeight: 'bold' }}>
                 Overall Accuracy
               </span>
