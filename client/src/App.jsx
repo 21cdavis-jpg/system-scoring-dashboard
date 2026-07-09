@@ -1903,6 +1903,123 @@ function GameSearchCombobox({ gameData, onSelectGame }) {
     </div>
   );
 }
+
+const RESEARCH_FILES = [
+  {
+    title: 'Foul Study',
+    description: 'Looking into the gap between the 7s and 11s buckets.',
+    url: 'https://github.com/21cdavis-jpg/system-scoring-dashboard/blob/main/foul_study.ipynb',
+    type: 'notebook'
+  },
+  {
+    title: 'Turnover Study',
+    description: 'Looking into opportunity for added value via turnover creation.',
+    url: 'https://github.com/21cdavis-jpg/system-scoring-dashboard/blob/main/turnover_study.ipynb',
+    type: 'notebook'
+  },
+  {
+    title: 'Foul and Turnover Study Data',
+    description: 'CSV export used as input for the above notebooks.',
+    url: 'https://github.com/21cdavis-jpg/system-scoring-dashboard/blob/main/Fouls_and_TOs.csv',
+    type: 'csv'
+  }
+];
+
+const FILE_TYPE_STYLE = {
+  notebook: { accent: '#1abc9c', dark: '#0f6e56', bg: '#e8f8f4', border: '#bfe9db', desc: '#5c7a71', label: 'SQL', icon: '⚙️' },
+  csv:      { accent: '#2980b9', dark: '#185fa5', bg: '#eaf3fb', border: '#c3ddf3', desc: '#5c7480', label: 'CSV',     icon: '🛢' }
+};
+
+function ResearchTab() {
+  return (
+    <section
+      className="research-tab-container"
+      style={{
+        maxWidth: '900px',
+        margin: '20px auto',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        padding: '24px',
+        borderRadius: '12px',
+        background: 'linear-gradient(135deg, #eef4fb 0%, #eafaf4 100%)'
+      }}
+    >
+      <h2 style={{ color: '#2c3e50', marginBottom: '4px' }}>Research & Scoring System Development</h2>
+      <p style={{ color: '#7f8c8d', fontSize: '0.9rem', marginTop: 0, marginBottom: '24px' }}>
+        Work-in-progress notebooks and data behind ongoing updates to the scoring system.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {RESEARCH_FILES.map((f, i) => {
+          const style = FILE_TYPE_STYLE[f.type] || FILE_TYPE_STYLE.notebook;
+          return (
+            <a
+              key={i}
+              href={f.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '16px 20px',
+                background: style.bg,
+                border: `1px solid ${style.border}`,
+                borderLeft: `4px solid ${style.accent}`,
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: 'inherit',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.10)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+              }}
+            >
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
+                background: '#ffffff',
+                color: style.dark,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                flexShrink: 0
+              }}>
+                {style.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <strong style={{ color: '#2c3e50', fontSize: '0.95rem' }}>{f.title}</strong>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                    color: style.dark,
+                    background: '#ffffff',
+                    padding: '2px 8px',
+                    borderRadius: '10px'
+                  }}>
+                    {style.label}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: style.desc, textAlign: 'left' }}>{f.description}</div>
+              </div>
+              <span style={{ color: style.dark, fontSize: '1.1rem' }}>→</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 // ==========================================
 // MAIN APP COMPONENT EXPORT
 // ==========================================
@@ -2217,7 +2334,7 @@ function App() {
       <header>
         <h1 className="main-title">Shot Quality Scoring System Dashboard</h1>
         <nav>
-          {['System', 'Team', 'Games', 'League'].map(tab => (
+          {['System', 'Team', 'Games', 'League', 'Research'].map(tab => (
             <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => { setActiveTab(tab); setPlays([]); setGameSummary(null); setSelectedTeamStats(null); }}>
               {tab}
             </button>
@@ -2860,6 +2977,8 @@ function App() {
             </div>
           </section>
         )}
+        {activeTab === 'Research' && <ResearchTab />}
+
       </main>
     </div>
   );
