@@ -797,7 +797,7 @@ app.get('/api/league/summary', (req, res) => {
                             const type = seg === '0' ? 0 : Math.floor(parseInt(seg) / 10);
                             if (counts[type] !== undefined) {
                                 counts[type]++;
-                                if (type !== 0) totalShots++;
+                                totalShots++;
                             }
                         });
                         // Track execution totals if points exist
@@ -813,10 +813,7 @@ app.get('/api/league/summary', (req, res) => {
                     const shotTypes = [6, 4, 7, 3, 1, 0];
                     return shotTypes.map(t => {
                         let pctValue = 0;
-                        if (t === 0) {
-                            // Turnover percentage is relative to total possessions
-                            pctValue = rows.length > 0 ? (counts[0] / rows.length) * 100 : 0;
-                        } else if (t === 7) {
+                        if (t === 7) {
                             // Combine 7s and 11s into one structural data cell matching your metrics logs
                             const combinedCount = counts[7] + counts[11];
                             pctValue = totalShots > 0 ? (combinedCount / totalShots) * 100 : 0;
